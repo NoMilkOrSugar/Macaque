@@ -13,5 +13,10 @@ This is a learning experiment so don't expect anything good right away... or eve
 
 ## Done
 
+* set up public assets and Ember app
+* set up Node package and Express app
 * put it on GitHub
 
+* * *
+
+Copyright (c) [David Bushell](http://dbushell.com) | [@dbushell](http://twitter.com/dbushell)

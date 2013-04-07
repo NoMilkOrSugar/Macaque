@@ -1,0 +1,23 @@
+{
+    "name": "Macaque",
+
+    "description": "A to-do or list app made with Node and Ember",
+
+    "author": "David bushell <david@dbushell.com>",
+
+    "version": "0.0.1",
+
+    "private": true,
+
+    "dependencies":
+    {
+        "express"                : ">=3.x.x",
+        "ejs"                    : ">=0.8.x",
+        "grunt"                  : ">=0.4.x",
+        "grunt-contrib-watch"    : ">=0.2.x",
+        "grunt-contrib-jshint"   : ">=0.1.x",
+        "grunt-contrib-compass"  : ">=0.1.x"
+    },
+
+    "engine": "node >= 0.8.x"
+}

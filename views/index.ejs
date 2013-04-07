@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="copyright" content="Copyright © David Bushell | @dbushell | http://dbushell.com/">
+    <title><%= title %></title>
+    <link rel="shortcut icon" href="favicon.ico">
+</head>
+<body>
+
+<script type="text/x-handlebars">
+
+    <h1><%= title %></h1>
+
+    {{outlet}}
+
+    <footer role="contentinfo">
+        <small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small>
+    </footer>
+
+</script>
+
+<script src="assets/js/vendor/jquery-1.9.1.min.js"></script>
+<script src="assets/js/vendor/handlebars-1.0.0-rc.3.min.js"></script>
+<script src="assets/js/vendor/ember-1.0.0-rc.2.min.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
