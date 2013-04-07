@@ -8,7 +8,7 @@ This is a learning experiment so don't expect anything good right away... or eve
 ## To-do
 
 * move this to-do into a working version of Macaque
-* spend the next month illustrating and mascot
+* spend the next month illustrating a mascot
 * get coding
 
 ## Done
