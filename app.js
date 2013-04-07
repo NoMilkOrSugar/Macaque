@@ -47,13 +47,6 @@ app.use(function(req, res, next)
     next();
 });
 
-app.get('/', function(req, res)
-{
-    res.render('index', {
-        title: app.get('title')
-    });
-});
-
 app.get('/api', function(req, res)
 {
     res.send({
@@ -78,6 +71,13 @@ app.get('/api/task/*', function(req, res)
             data: mdata.tasksJSON.tasks[id - 1]
         });
     }
+});
+
+app.get('/*', function(req, res)
+{
+    res.render('index', {
+        title: app.get('title')
+    });
 });
 
 http.createServer(app).listen(app.get('port'), function()

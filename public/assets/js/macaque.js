@@ -7,19 +7,20 @@ Macaque = Ember.Application.create({
     LOG_TRANSITIONS: true
 });
 
-// Macaque.Router.reopen({
-//     location: 'history'
-// });
+// enable History API (requires catch-all route on server)
+Macaque.Router.reopen({ location: 'history' });
 
 Macaque.Router.map(function()
 {
     this.route('about', { path: '/about' });
 
+    // Macaque.Category
     this.resource('category', { path: '/category/:category_id' }, function()
     {
         this.route('edit', { path: '/edit' });
     });
 
+    // Macaque.Tasks
     this.resource('task', { path: '/task/:task_id'}, function()
     {
         this.route('edit', { path: '/edit' });
@@ -50,10 +51,14 @@ Macaque.ApplicationController = Ember.Controller.extend({
 
 Macaque.IndexRoute = Ember.Route.extend({
 
-    redirect: function()
+    model: function()
     {
-        this.transitionTo('category', Macaque.Category.find('all'));
+        return [ Macaque.Category.find('all') ];
     }
+    // redirect: function()
+    // {
+    //     this.transitionTo('category', Macaque.Category.find('all'));
+    // }
 });
 
 /**
@@ -167,6 +172,7 @@ Macaque.Task.reopenClass({
     {
         if (data) {
             this.store[id] = Macaque.Task.create(data);
+            this.store[id].set('loaded', true);
         } else {
             if (!this.store[id]) {
                 this.store[id] = Macaque.Task.create({ id: id });
@@ -199,17 +205,18 @@ Macaque.TaskRoute = Ember.Route.extend({
     setupController: function(controller, model)
     {
         model.loadData();
-    }/*,
-
+    }
+    /*
     renderTemplate: function()
     {
         this.render({
             into: 'application'
         });
-    }*/
+    }
+    */
 });
 
 Macaque.TaskController = Ember.ObjectController.extend({
 
-    needs: ['category']
+    // needs: ['category']
 });
