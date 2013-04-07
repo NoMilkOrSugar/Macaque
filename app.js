@@ -30,10 +30,10 @@ app.use(function(req, res, next)
     if (req.method === 'GET') {
         var req_url = url.parse(req.url);
         if (req_url.pathname.length > 1) {
-            // adding a trailing slash for API requests
+            // remove trailing slash for API requests
             if (/^\/api/.test(req_url.pathname)) {
-                if (!/\/$/.test(req_url.pathname)) {
-                    res.writeHead(301, { 'Location': req_url.pathname + '/' + (req_url.search ? req_url.search : '') });
+                if (/\/$/.test(req_url.pathname)) {
+                    res.writeHead(301, { 'Location': req_url.pathname.replace(/\/$/, '') + (req_url.search ? req_url.search : '') });
                     res.end();
                     return;
                 }
@@ -54,16 +54,30 @@ app.get('/', function(req, res)
     });
 });
 
-app.get('/api/', function(req, res)
+app.get('/api', function(req, res)
 {
     res.send({
         'version': app.get('version')
     });
 });
 
-app.get('/api/category/all/', function(req, res)
+app.get('/api/category/all', function(req, res)
 {
     res.send(mdata.tasksJSON);
+});
+
+app.get('/api/task/*', function(req, res)
+{
+    var id = parseInt(req.params[0], 10);
+    if (isNaN(id) || id < 0 || id >= mdata.tasksJSON.tasks.length) {
+        res.writeHead(404);
+        res.end();
+    } else {
+        res.send({
+            success: true,
+            data: mdata.tasksJSON.tasks[id - 1]
+        });
+    }
 });
 
 http.createServer(app).listen(app.get('port'), function()

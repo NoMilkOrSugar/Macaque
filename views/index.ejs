@@ -51,8 +51,11 @@
 
 <script type="text/x-handlebars" data-template-name="task">
     <h2>Task</h2>
-    <p>{{id}}: {{text}}</p>
-    <p>{{#linkTo 'category' controllers.category}}Return to category{{/linkTo}}</p>
+    {{#if loaded}}
+        <p>{{id}}: {{text}}</p>
+    {{else}}
+        <p>Loading…</p>
+    {{/if}}
 </script>
 
 <script src="/assets/js/vendor/jquery-1.9.1.min.js"></script>

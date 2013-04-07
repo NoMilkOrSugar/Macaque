@@ -17,7 +17,12 @@ Macaque.Router.map(function()
 
     this.resource('category', { path: '/category/:category_id' }, function()
     {
-        this.resource('task', { path: '/:task_id' });
+        this.route('edit', { path: '/edit' });
+    });
+
+    this.resource('task', { path: '/task/:task_id'}, function()
+    {
+        this.route('edit', { path: '/edit' });
     });
 });
 
@@ -70,8 +75,8 @@ Macaque.Category = Ember.Object.extend({
         {
             var tasks = Em.A();
             if (response.success) {
-                response.tasks.forEach(function(item) {
-                    tasks.push(Macaque.Task.find(item.id, item));
+                response.tasks.forEach(function(data) {
+                    tasks.push(Macaque.Task.find(data.id, data));
                 });
             }
             category.setProperties({
@@ -131,20 +136,37 @@ Macaque.CategoryController = Ember.ObjectController.extend({
  */
 
 Macaque.Task = Ember.Object.extend({
+
+    loaded: false,
     id: null,
     text: 'Untitled',
     created: new Date(),
-    done: false
+    done: false,
+
+    loadData: function()
+    {
+        if (this.get('loaded')) {
+            return;
+        }
+        var task = this;
+        $.getJSON('/api/task/' + task.get('id')).then(function(response)
+        {
+            if (response.success) {
+                task.setProperties(response.data);
+                task.set('loaded', true);
+            }
+        });
+    }
 });
 
 Macaque.Task.reopenClass({
 
     store: { },
 
-    find: function(id, item)
+    find: function(id, data)
     {
-        if (item) {
-            this.store[id] = Macaque.Task.create(item);
+        if (data) {
+            this.store[id] = Macaque.Task.create(data);
         } else {
             if (!this.store[id]) {
                 this.store[id] = Macaque.Task.create({ id: id });
@@ -176,7 +198,7 @@ Macaque.TaskRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
-        // load individual task
+        model.loadData();
     }/*,
 
     renderTemplate: function()
