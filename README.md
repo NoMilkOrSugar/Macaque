@@ -13,6 +13,8 @@ This is a learning experiment so don't expect anything good right away... or eve
 
 ## Done
 
+* add category and task routes
+* add fake JSON API for test data
 * set up public assets and Ember app
 * set up Node package and Express app
 * put it on GitHub
