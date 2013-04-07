@@ -20,7 +20,7 @@ Macaque.Router.map(function()
         this.route('edit', { path: '/edit' });
     });
 
-    // Macaque.Tasks
+    // Macaque.Task
     this.resource('task', { path: '/task/:task_id'}, function()
     {
         this.route('edit', { path: '/edit' });
