@@ -41,6 +41,7 @@ app.use(function(req, res, next)
     next();
 });
 
+
 /* ==========================================================================
    Macaque API
    ========================================================================== */
@@ -53,20 +54,19 @@ app.get('/api', function(req, res)
     });
 });
 
-// retrieve all lists
-app.get('/api/lists', data.getLists);
-
-// retrieve a specific list by its `id`
-app.get('/api/lists/:id', data.getList);
-
-// create a new list
-app.post('/api/lists', data.addList);
-
-// update a specific list by its `id`
-app.put('/api/lists/:id', data.updateList);
-
-// delete a specific list by its `id`
+// list API paths
+app.get('/api/lists',        data.findLists);
+app.get('/api/lists/:id',    data.findList);
+app.post('/api/lists',       data.addList);
+app.put('/api/lists/:id',    data.updateList);
 app.delete('/api/lists/:id', data.deleteList);
+
+// task API paths
+app.get('/api/tasks',        data.findTasks);
+app.get('/api/tasks/:id',    data.findTask);
+app.post('/api/tasks',       data.addTask);
+app.put('/api/tasks/:id',    data.updateTask);
+app.delete('/api/tasks/:id', data.deleteTask);
 
 
 /* ==========================================================================
