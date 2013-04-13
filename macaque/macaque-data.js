@@ -4,7 +4,8 @@
  */
 
 var mongo = require('mongodb'),
-    mongoose = require('mongoose');
+    mongoose = require('mongoose'),
+    ObjectId = mongoose.Schema.Types.ObjectId;
 
 var validateString = function(val)
 {
@@ -23,7 +24,7 @@ var taskSchema = mongoose.Schema({
     'created'  : { 'type': Date, 'default': Date.now },
     'modified' : { 'type': Date, 'default': Date.now },
     'deleted'  : { 'type': Boolean, 'default': false },
-    'lists'    : [mongoose.Schema.Types.ObjectId]
+    'lists'    : [ObjectId]
 });
 
 var ListModel = mongoose.model('ListModel', listSchema);
@@ -106,7 +107,11 @@ exports.deleteList = function(req, res)
 
 exports.findTasks = function(req, res)
 {
-    TaskModel.find({}, function(err, tasks) {
+    var query = { };
+    if (req.query.list) {
+        query.lists = { $in: [req.query.list] };
+    }
+    TaskModel.find(query, function(err, tasks) {
         if (err) return onError(res, err);
         onSuccess(res, tasks);
     });
@@ -142,5 +147,56 @@ exports.deleteTask = function(req, res)
     TaskModel.remove({ '_id': req.params.id }, function(err) {
         if (err) return onError(res, err);
         onSuccess(res);
+    });
+};
+
+/* ==========================================================================
+   Data Fixtures
+   ========================================================================== */
+
+exports.resetFixtures = function()
+{
+    TaskModel.find({}, function(err, docs) {
+        if (!err) docs.forEach(function(doc) { doc.remove(); });
+    });
+
+    ListModel.find({}, function(err, docs) {
+        if (!err) docs.forEach(function(doc) { doc.remove(); });
+    });
+
+    var docs = [
+        { name: 'Primates' },
+        { name: 'Apes' },
+        { name: 'Monkeys' },
+        { name: 'New World Monkeys' },
+        { name: 'Old World Monkeys' }
+    ];
+
+    ListModel.create(docs, function(err, primates, apes, monkeys, new_world, old_world)
+    {
+        if (err) return;
+
+        docs = [
+            { text: 'Lemurs', lists: [ primates._id ] },
+            { text: 'Lorises', lists: [ primates._id ] },
+            { text: 'Tarsiers', lists: [ primates._id ] },
+
+            { text: 'Chimpanzees', lists: [ primates._id, apes._id ] },
+            { text: 'Gibbons', lists: [ primates._id, apes._id ] },
+            { text: 'Gorillas', lists: [ primates._id, apes._id ] },
+            { text: 'Orangutans', lists: [ primates._id, apes._id ] },
+
+            { text: 'Capuchins', lists: [ primates._id, monkeys._id, new_world._id ] },
+            { text: 'Howler Monkeys', lists: [ primates._id, monkeys._id, new_world._id ] },
+            { text: 'Marmosets', lists: [ primates._id, monkeys._id, new_world._id ] },
+
+            { text: 'Colobus', lists: [ primates._id, monkeys._id, old_world._id] },
+            { text: 'Baboons', lists: [ primates._id, monkeys._id, old_world._id] },
+            { text: 'Macaques', lists: [ primates._id, monkeys._id, old_world._id] }
+        ];
+
+        TaskModel.create(docs, function(err) {
+            if (!err) console.log('Fixtures loaded');
+        });
     });
 };

@@ -84,6 +84,9 @@ app.get('/*', function(req, res)
 // open MongoDB
 data.openDb('macaque');
 
+// load test data
+data.resetFixtures();
+
 http.createServer(app).listen(app.get('port'), function()
 {
     console.log(app.get('title') + ' listening on port ' + app.get('port'));
