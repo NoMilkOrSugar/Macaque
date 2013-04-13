@@ -18,6 +18,8 @@ This is a learning experiment so don't expect anything good right away... or eve
 
 ## Done
 
+* add Mocha tests for tasks
+* add Mongoose and schema
 * start Mocha tests for API
 * start real API with MongoDB
 * add category and task routes

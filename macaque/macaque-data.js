@@ -3,21 +3,42 @@
  * Copyright (c) David Bushell | @dbushell | http://dbushell.com/
  */
 
-var mongo = require('mongodb');
+var mongo = require('mongodb'),
+    mongoose = require('mongoose'),
+    ObjectId = mongoose.Schema.Types.ObjectId;
 
-var db, server = new mongo.Server('localhost', 27017, { auto_reconnect: true });
+var validateString = function(val)
+{
+    return (typeof val === 'string' && val.length > 0);
+};
 
-/**
- * open database
- */
+var listSchema = mongoose.Schema({
+    'name'     : { 'type': String, 'default': 'Untitled', validate: validateString },
+    'created'  : { 'type': Date, 'default': Date.now },
+    'modified' : { 'type': Date, 'default': Date.now },
+    'deleted'  : { 'type': Boolean, 'default': false }
+});
+
+var taskSchema = mongoose.Schema({
+    'text'     : { 'type': String, 'default': 'Untitled', validate: validateString },
+    'created'  : { 'type': Date, 'default': Date.now },
+    'modified' : { 'type': Date, 'default': Date.now },
+    'deleted'  : { 'type': Boolean, 'default': false },
+    'lists'    : [ObjectId]
+});
+
+var ListModel = mongoose.model('ListModel', listSchema);
+var TaskModel = mongoose.model('TaskModel', taskSchema);
+
+var db;
+
 exports.openDb = function(name)
 {
-    db = new mongo.Db(name, server, { w: 1 });
-    db.open(function(err, db)
+    mongoose.connect('mongodb://localhost:27017/' + name);
+    db = mongoose.connection;
+    db.once('open', function()
     {
-        if (!err) {
-            console.log('Connected to database "' + name + '"');
-        }
+        console.log('Connected to database "' + name + '"');
     });
 };
 
@@ -28,95 +49,154 @@ var onError = function(res, err)
 
 var onSuccess = function(res, data)
 {
-    res.send({ 'success': true, 'data': data });
+    if (data) {
+        res.send({ 'success': true, 'data': data });
+    } else {
+        res.send({ 'success': true });
+    }
 };
 
-/**
- * retrieve all lists
- */
-exports.getLists = function(req, res)
+/* ==========================================================================
+   Lists API
+   ========================================================================== */
+
+exports.findLists = function(req, res)
 {
-    db.collection('lists', function(err, collection)
-    {
+    ListModel.find({}, function(err, lists) {
         if (err) return onError(res, err);
-        collection.find().toArray(function(err, items)
-        {
-            if (err) return onError(res, err);
-            onSuccess(res, items);
-        });
+        onSuccess(res, lists);
     });
 };
 
-/**
- * retrieve a specific list by `_id`
- */
-exports.getList = function(req, res)
+exports.findList = function(req, res)
 {
-    var id = req.params.id;
-    db.collection('lists', function(err, collection)
-    {
+    ListModel.find({ '_id': req.params.id }, function(err, list) {
         if (err) return onError(res, err);
-        collection.findOne({ '_id': new mongo.BSONPure.ObjectID(id) }, function(err, item)
-        {
-            if (err) return onError(res, err);
-            onSuccess(res, item);
-        });
+        onSuccess(res, list[0]);
     });
 };
 
-/**
- * create a new list
- */
 exports.addList = function(req, res)
 {
-    var list = req.body;
-
-    if (typeof list.name !== 'string') {
-        return onError(res, new Error('List \'name\' property required'));
-    }
-
-    db.collection('lists', function(err, collection)
-    {
+    var list = new ListModel(req.body);
+    list.save(function(err) {
         if (err) return onError(res, err);
-        collection.insert(list, { safe: true }, function(err, result)
-        {
-            if (err) return onError(res, err);
-            onSuccess(res, result[0]);
-        });
+        onSuccess(res, list);
     });
 };
 
-/**
- * update a specific list by `_id`
- */
 exports.updateList  = function(req, res)
 {
-    var id = req.params.id;
-    var list = req.body;
-    db.collection('lists', function(err, collection)
-    {
+    var list = ListModel.findByIdAndUpdate(req.params.id, req.body, function(err, list) {
         if (err) return onError(res, err);
-        collection.update({ '_id': new mongo.BSONPure.ObjectID(id) }, list, { safe: true }, function(err, result)
-            {
-                if (err) return onError(res, err);
-                onSuccess(res, result[0]);
-            });
+        onSuccess(res, list);
     });
 };
 
-/**
- * delete a specific list by `_id`
- */
 exports.deleteList = function(req, res)
 {
-    var id = req.params.id;
-    db.collection('lists', function(err, collection)
-    {
+    ListModel.remove({ '_id': req.params.id }, function(err) {
         if (err) return onError(res, err);
-        collection.remove({ '_id': new mongo.BSONPure.ObjectID(id) }, { safe: true }, function(err, result)
-        {
-            if (err) return onError(res, err);
-            onSuccess(res, result[0]);
+        onSuccess(res);
+    });
+};
+
+/* ==========================================================================
+   Tasks API
+   ========================================================================== */
+
+exports.findTasks = function(req, res)
+{
+    var query = { };
+    if (req.query.list) {
+        query.lists = { $in: [req.query.list] };
+    }
+    TaskModel.find(query, function(err, tasks) {
+        if (err) return onError(res, err);
+        onSuccess(res, tasks);
+    });
+};
+
+exports.findTask = function(req, res)
+{
+    TaskModel.find({ '_id': req.params.id }, function(err, task) {
+        if (err) return onError(res, err);
+        onSuccess(res, task[0]);
+    });
+};
+
+exports.addTask = function(req, res)
+{
+    var task = new TaskModel(req.body);
+    task.save(function(err) {
+        if (err) return onError(res, err);
+        onSuccess(res, task);
+    });
+};
+
+exports.updateTask  = function(req, res)
+{
+    var task = TaskModel.findByIdAndUpdate(req.params.id, req.body, function(err, task) {
+        if (err) return onError(res, err);
+        onSuccess(res, task);
+    });
+};
+
+exports.deleteTask = function(req, res)
+{
+    TaskModel.remove({ '_id': req.params.id }, function(err) {
+        if (err) return onError(res, err);
+        onSuccess(res);
+    });
+};
+
+/* ==========================================================================
+   Data Fixtures
+   ========================================================================== */
+
+exports.resetFixtures = function()
+{
+    TaskModel.find({}, function(err, docs) {
+        if (!err) docs.forEach(function(doc) { doc.remove(); });
+    });
+
+    ListModel.find({}, function(err, docs) {
+        if (!err) docs.forEach(function(doc) { doc.remove(); });
+    });
+
+    var docs = [
+        { name: 'Primates' },
+        { name: 'Apes' },
+        { name: 'Monkeys' },
+        { name: 'New World Monkeys' },
+        { name: 'Old World Monkeys' }
+    ];
+
+    ListModel.create(docs, function(err, primates, apes, monkeys, new_world, old_world)
+    {
+        if (err) return;
+
+        docs = [
+            { text: 'Lemurs', lists: [ primates._id ] },
+            { text: 'Lorises', lists: [ primates._id ] },
+            { text: 'Tarsiers', lists: [ primates._id ] },
+
+            { text: 'Chimpanzees', lists: [ primates._id, apes._id ] },
+            { text: 'Gibbons', lists: [ primates._id, apes._id ] },
+            { text: 'Gorillas', lists: [ primates._id, apes._id ] },
+            { text: 'Orangutans', lists: [ primates._id, apes._id ] },
+
+            { text: 'Capuchins', lists: [ primates._id, monkeys._id, new_world._id ] },
+            { text: 'Howler Monkeys', lists: [ primates._id, monkeys._id, new_world._id ] },
+            { text: 'Marmosets', lists: [ primates._id, monkeys._id, new_world._id ] },
+
+            { text: 'Colobus', lists: [ primates._id, monkeys._id, old_world._id] },
+            { text: 'Baboons', lists: [ primates._id, monkeys._id, old_world._id] },
+            { text: 'Macaques', lists: [ primates._id, monkeys._id, old_world._id] }
+        ];
+
+        TaskModel.create(docs, function(err) {
+            if (!err) console.log('Fixtures loaded');
         });
     });
 };
