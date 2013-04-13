@@ -7,7 +7,7 @@ var express = require('express'),
     http    = require('http'),
     path    = require('path'),
     url     = require('url'),
-    mdata   = require('./macaque/data');
+    data    = require('./macaque/macaque-data');
 
 var app = express();
 
@@ -19,34 +19,33 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 
 app.use(express.logger('dev'));
-app.use(express.compress());
 app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(express.static(__dirname + '/public'));
+// app.use(express.compress());
 // app.use(app.router);
 
 app.use(function(req, res, next)
 {
+    // remove trailing slash for API requests
     if (req.method === 'GET') {
         var req_url = url.parse(req.url);
         if (req_url.pathname.length > 1) {
-            // remove trailing slash for API requests
-            if (/^\/api/.test(req_url.pathname)) {
-                if (/\/$/.test(req_url.pathname)) {
-                    res.writeHead(301, { 'Location': req_url.pathname.replace(/\/$/, '') + (req_url.search ? req_url.search : '') });
-                    res.end();
-                    return;
-                }
-            } else {
-                // res.writeHead(301, { 'Location': '/#' + req_url.href });
-                // res.end();
-                // return;
+            if (/^\/api/.test(req_url.pathname) && /\/$/.test(req_url.pathname)) {
+                res.writeHead(301, { 'Location': req_url.pathname.replace(/\/$/, '') + (req_url.search ? req_url.search : '') });
+                res.end();
+                return;
             }
         }
     }
     next();
 });
 
+/* ==========================================================================
+   Macaque API
+   ========================================================================== */
+
+// retrieve API version
 app.get('/api', function(req, res)
 {
     res.send({
@@ -54,25 +53,27 @@ app.get('/api', function(req, res)
     });
 });
 
-app.get('/api/category/all', function(req, res)
-{
-    res.send(mdata.tasksJSON);
-});
+// retrieve all lists
+app.get('/api/lists', data.getLists);
 
-app.get('/api/task/*', function(req, res)
-{
-    var id = parseInt(req.params[0], 10);
-    if (isNaN(id) || id < 0 || id >= mdata.tasksJSON.tasks.length) {
-        res.writeHead(404);
-        res.end();
-    } else {
-        res.send({
-            success: true,
-            data: mdata.tasksJSON.tasks[id - 1]
-        });
-    }
-});
+// retrieve a specific list by its `id`
+app.get('/api/lists/:id', data.getList);
 
+// create a new list
+app.post('/api/lists', data.addList);
+
+// update a specific list by its `id`
+app.put('/api/lists/:id', data.updateList);
+
+// delete a specific list by its `id`
+app.delete('/api/lists/:id', data.deleteList);
+
+
+/* ==========================================================================
+   Macaque
+   ========================================================================== */
+
+// catch everything else for routing in Ember
 app.get('/*', function(req, res)
 {
     res.render('index', {
@@ -80,7 +81,13 @@ app.get('/*', function(req, res)
     });
 });
 
+// open MongoDB
+data.openDb('macaque');
+
 http.createServer(app).listen(app.get('port'), function()
 {
     console.log(app.get('title') + ' listening on port ' + app.get('port'));
+
+    // run Mocha tests for Macaque API
+    require('child_process').spawn('./node_modules/.bin/mocha', ['--reporter', 'Spec', './tests/macaque-api.js'], { stdio: 'inherit' });
 });

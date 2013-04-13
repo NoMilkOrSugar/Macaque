@@ -11,8 +11,15 @@ This is a learning experiment so don't expect anything good right away... or eve
 * spend the next month illustrating a mascot
 * get coding
 
+## Next
+
+* finish API and tests
+* update Ember templates to match API
+
 ## Done
 
+* start Mocha tests for API
+* start real API with MongoDB
 * add category and task routes
 * add fake JSON API for test data
 * set up public assets and Ember app

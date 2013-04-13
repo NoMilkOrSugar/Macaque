@@ -5,7 +5,7 @@
 
     "author": "David Bushell <david@dbushell.com>",
 
-    "version": "0.0.1",
+    "version": "0.0.2",
 
     "private": true,
 
@@ -13,6 +13,8 @@
     {
         "express"                : ">=3.x.x",
         "ejs"                    : ">=0.8.x",
+        "mongodb"                : ">=1.2.x",
+        "mocha"                  : ">=1.9.x",
         "grunt"                  : ">=0.4.x",
         "grunt-contrib-watch"    : ">=0.2.x",
         "grunt-contrib-jshint"   : ">=0.1.x",
