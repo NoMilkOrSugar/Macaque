@@ -10,27 +10,52 @@ Macaque = Ember.Application.create({
 // enable History API (requires catch-all route on server)
 Macaque.Router.reopen({ location: 'history' });
 
+Macaque.Store = DS.Store.extend({
+  revision: 12
+});
+
+Macaque.List = DS.Model.extend({
+    name     : DS.attr('string'),
+    created  : DS.attr('date'),
+    modified : DS.attr('date'),
+    hidden   : DS.attr('boolean'),
+    tasks    : DS.hasMany('Macaque.Task')
+});
+
+Macaque.Task = DS.Model.extend({
+    text      : DS.attr('string'),
+    created   : DS.attr('date'),
+    modified  : DS.attr('date'),
+    completed : DS.attr('boolean'),
+    hidden    : DS.attr('boolean'),
+    lists     : DS.hasMany('Macaque.List')
+});
+
+DS.RESTAdapter.configure('plurals', {
+    list: 'lists',
+    task: 'tasks'
+});
+
+DS.RESTAdapter.reopen({
+    namespace: 'api'
+});
+
 Macaque.Router.map(function()
 {
     this.route('about', { path: '/about' });
 
-    // Macaque.Category
-    this.resource('category', { path: '/category/:category_id' }, function()
-    {
+    this.resource('list', { path: '/list/:id' }, function() {
         this.route('edit', { path: '/edit' });
     });
 
-    // Macaque.Task
-    this.resource('task', { path: '/task/:task_id'}, function()
-    {
+    this.resource('task', { path: '/task/:id'}, function() {
         this.route('edit', { path: '/edit' });
     });
 });
 
-/**
- * Macaque.Application
- *
- */
+/* ==========================================================================
+   Application
+   ========================================================================== */
 
 Macaque.ApplicationRoute = Ember.Route.extend({
 
@@ -44,143 +69,55 @@ Macaque.ApplicationController = Ember.Controller.extend({
 
 });
 
-/**
- * Macaque.Index
- *
- */
+/* ==========================================================================
+   Index
+   ========================================================================== */
 
 Macaque.IndexRoute = Ember.Route.extend({
 
     model: function()
     {
-        return [ Macaque.Category.find('all') ];
-    }
-    // redirect: function()
-    // {
-    //     this.transitionTo('category', Macaque.Category.find('all'));
-    // }
-});
-
-/**
- * Macaque.Category
- *
- */
-
-Macaque.Category = Ember.Object.extend({
-
-    loaded: false,
-
-    loadTasks: function()
-    {
-        if (this.get('loaded')) {
-            return;
-        }
-        var category = this;
-        $.getJSON('/api/category/' + category.get('id')).then(function(response)
-        {
-            var tasks = Em.A();
-            if (response.success) {
-                response.tasks.forEach(function(data) {
-                    tasks.push(Macaque.Task.find(data.id, data));
-                });
-            }
-            category.setProperties({
-                tasks: tasks,
-                loaded: true
-            });
-        });
+        return Macaque.List.find();
     }
 });
 
-Macaque.CategoryView = Ember.View.extend({
+/* ==========================================================================
+   List
+   ========================================================================== */
 
-    classNames: ['category-view']
+Macaque.ListView = Ember.View.extend({
+
+    classNames: ['list-view']
 
 });
 
-Macaque.Category.reopenClass({
-
-    store: { },
-
-    find: function(id)
-    {
-        if (!this.store[id]) {
-            this.store[id] = Macaque.Category.create({ id: id });
-        }
-        return this.store[id];
-    }
-});
-
-Macaque.CategoryRoute = Ember.Route.extend({
+Macaque.ListRoute = Ember.Route.extend({
 
     serialize: function(model)
     {
         return {
-            category_id: model.get('id')
+            id: model.get('id')
         };
     },
 
     model: function(params)
     {
-        return Macaque.Category.find(params.category_id);
+        return Macaque.List.find(params.id);
     },
 
     setupController: function(controller, model)
     {
-        model.loadTasks();
+
     }
 });
 
-Macaque.CategoryController = Ember.ObjectController.extend({
+Macaque.ListController = Ember.ObjectController.extend({
 
 });
 
-/**
- * Macaque.Item
- *
- */
-
-Macaque.Task = Ember.Object.extend({
-
-    loaded: false,
-    id: null,
-    text: 'Untitled',
-    created: new Date(),
-    done: false,
-
-    loadData: function()
-    {
-        if (this.get('loaded')) {
-            return;
-        }
-        var task = this;
-        $.getJSON('/api/task/' + task.get('id')).then(function(response)
-        {
-            if (response.success) {
-                task.setProperties(response.data);
-                task.set('loaded', true);
-            }
-        });
-    }
-});
-
-Macaque.Task.reopenClass({
-
-    store: { },
-
-    find: function(id, data)
-    {
-        if (data) {
-            this.store[id] = Macaque.Task.create(data);
-            this.store[id].set('loaded', true);
-        } else {
-            if (!this.store[id]) {
-                this.store[id] = Macaque.Task.create({ id: id });
-            }
-        }
-        return this.store[id];
-    }
-});
+/* ==========================================================================
+   Task
+   ========================================================================== */
 
 Macaque.TaskView = Ember.View.extend({
 
@@ -193,30 +130,21 @@ Macaque.TaskRoute = Ember.Route.extend({
     serialize: function(model)
     {
         return {
-            task_id: model.id
+            id: model.get('id')
         };
     },
 
     model: function(params)
     {
-        return Macaque.Task.find(params.task_id);
+        return Macaque.Task.find(params.id);
     },
 
     setupController: function(controller, model)
     {
-        model.loadData();
+
     }
-    /*
-    renderTemplate: function()
-    {
-        this.render({
-            into: 'application'
-        });
-    }
-    */
 });
 
 Macaque.TaskController = Ember.ObjectController.extend({
 
-    // needs: ['category']
 });

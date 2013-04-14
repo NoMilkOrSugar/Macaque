@@ -16,15 +16,33 @@ var listSchema = mongoose.Schema({
     'name'     : { 'type': String, 'default': 'Untitled', validate: validateString },
     'created'  : { 'type': Date, 'default': Date.now },
     'modified' : { 'type': Date, 'default': Date.now },
-    'deleted'  : { 'type': Boolean, 'default': false }
+    'hidden'   : { 'type': Boolean, 'default': false },
+    'task_ids' : [{ 'type': ObjectId, ref: 'TaskModel' }]
+});
+
+listSchema.virtual('id').get(function() {
+    return this._id.toHexString();
+});
+
+listSchema.set('toJSON', {
+    virtuals: true
 });
 
 var taskSchema = mongoose.Schema({
-    'text'     : { 'type': String, 'default': 'Untitled', validate: validateString },
-    'created'  : { 'type': Date, 'default': Date.now },
-    'modified' : { 'type': Date, 'default': Date.now },
-    'deleted'  : { 'type': Boolean, 'default': false },
-    'lists'    : [ObjectId]
+    'text'      : { 'type': String, 'default': 'Untitled', validate: validateString },
+    'created'   : { 'type': Date, 'default': Date.now },
+    'modified'  : { 'type': Date, 'default': Date.now },
+    'completed' : { 'type': Boolean, 'default': false },
+    'hidden'    : { 'type': Boolean, 'default': false },
+    'list_ids'  : [{ 'type': ObjectId, ref: 'ListModel' }]
+});
+
+taskSchema.virtual('id').get(function() {
+    return this._id.toHexString();
+});
+
+taskSchema.set('toJSON', {
+    virtuals: true
 });
 
 var ListModel = mongoose.model('ListModel', listSchema);
@@ -50,7 +68,7 @@ var onError = function(res, err)
 var onSuccess = function(res, data)
 {
     if (data) {
-        res.send({ 'success': true, 'data': data });
+        res.send(data);
     } else {
         res.send({ 'success': true });
     }
@@ -62,9 +80,9 @@ var onSuccess = function(res, data)
 
 exports.findLists = function(req, res)
 {
-    ListModel.find({}, function(err, lists) {
+    ListModel.find({ 'hidden': false }, function(err, lists) {
         if (err) return onError(res, err);
-        onSuccess(res, lists);
+        onSuccess(res, { 'lists': lists });
     });
 };
 
@@ -72,7 +90,13 @@ exports.findList = function(req, res)
 {
     ListModel.find({ '_id': req.params.id }, function(err, list) {
         if (err) return onError(res, err);
-        onSuccess(res, list[0]);
+        TaskModel.find({ 'hidden': false, 'list_ids': { $in: [req.params.id] }}, function(err, tasks) {
+            if (!err) {
+                onSuccess(res, { 'list': list[0], 'tasks': tasks });
+            } else {
+                onSuccess(res, { 'list': list[0] });
+            }
+        });
     });
 };
 
@@ -81,7 +105,7 @@ exports.addList = function(req, res)
     var list = new ListModel(req.body);
     list.save(function(err) {
         if (err) return onError(res, err);
-        onSuccess(res, list);
+        onSuccess(res, { 'list': list });
     });
 };
 
@@ -89,7 +113,7 @@ exports.updateList  = function(req, res)
 {
     var list = ListModel.findByIdAndUpdate(req.params.id, req.body, function(err, list) {
         if (err) return onError(res, err);
-        onSuccess(res, list);
+        onSuccess(res, { 'list': list });
     });
 };
 
@@ -107,13 +131,9 @@ exports.deleteList = function(req, res)
 
 exports.findTasks = function(req, res)
 {
-    var query = { };
-    if (req.query.list) {
-        query.lists = { $in: [req.query.list] };
-    }
-    TaskModel.find(query, function(err, tasks) {
+    TaskModel.find({ 'hidden': false }, function(err, tasks) {
         if (err) return onError(res, err);
-        onSuccess(res, tasks);
+        onSuccess(res, { 'tasks': tasks });
     });
 };
 
@@ -121,7 +141,13 @@ exports.findTask = function(req, res)
 {
     TaskModel.find({ '_id': req.params.id }, function(err, task) {
         if (err) return onError(res, err);
-        onSuccess(res, task[0]);
+        ListModel.find({ 'hidden': false, '_id': { $in: task[0].list_ids }}, function(err, lists) {
+            if (!err) {
+                onSuccess(res, { 'task': task[0], 'lists': lists });
+            } else {
+                onSuccess(res, { 'task': task[0] });
+            }
+        });
     });
 };
 
@@ -130,7 +156,7 @@ exports.addTask = function(req, res)
     var task = new TaskModel(req.body);
     task.save(function(err) {
         if (err) return onError(res, err);
-        onSuccess(res, task);
+        onSuccess(res, { 'task': task });
     });
 };
 
@@ -138,7 +164,7 @@ exports.updateTask  = function(req, res)
 {
     var task = TaskModel.findByIdAndUpdate(req.params.id, req.body, function(err, task) {
         if (err) return onError(res, err);
-        onSuccess(res, task);
+        onSuccess(res, { 'task': task });
     });
 };
 
@@ -177,25 +203,41 @@ exports.resetFixtures = function()
         if (err) return;
 
         docs = [
-            { text: 'Lemurs', lists: [ primates._id ] },
-            { text: 'Lorises', lists: [ primates._id ] },
-            { text: 'Tarsiers', lists: [ primates._id ] },
+            { text: 'Lemurs', list_ids: [ primates._id ] },
+            { text: 'Lorises', list_ids: [ primates._id ] },
+            { text: 'Tarsiers', list_ids: [ primates._id ] },
 
-            { text: 'Chimpanzees', lists: [ primates._id, apes._id ] },
-            { text: 'Gibbons', lists: [ primates._id, apes._id ] },
-            { text: 'Gorillas', lists: [ primates._id, apes._id ] },
-            { text: 'Orangutans', lists: [ primates._id, apes._id ] },
+            { text: 'Chimpanzees', list_ids: [ primates._id, apes._id ] },
+            { text: 'Gibbons', list_ids: [ primates._id, apes._id ] },
+            { text: 'Gorillas', list_ids: [ primates._id, apes._id ] },
+            { text: 'Orangutans', list_ids: [ primates._id, apes._id ] },
 
-            { text: 'Capuchins', lists: [ primates._id, monkeys._id, new_world._id ] },
-            { text: 'Howler Monkeys', lists: [ primates._id, monkeys._id, new_world._id ] },
-            { text: 'Marmosets', lists: [ primates._id, monkeys._id, new_world._id ] },
+            { text: 'Capuchins', list_ids: [ primates._id, monkeys._id, new_world._id ] },
+            { text: 'Howler Monkeys', list_ids: [ primates._id, monkeys._id, new_world._id ] },
+            { text: 'Marmosets', list_ids: [ primates._id, monkeys._id, new_world._id ] },
 
-            { text: 'Colobus', lists: [ primates._id, monkeys._id, old_world._id] },
-            { text: 'Baboons', lists: [ primates._id, monkeys._id, old_world._id] },
-            { text: 'Macaques', lists: [ primates._id, monkeys._id, old_world._id] }
+            { text: 'Colobus', list_ids: [ primates._id, monkeys._id, old_world._id] },
+            { text: 'Baboons', list_ids: [ primates._id, monkeys._id, old_world._id] },
+            { text: 'Macaques', list_ids: [ primates._id, monkeys._id, old_world._id] }
         ];
 
         TaskModel.create(docs, function(err) {
+
+            ListModel.find({}, function(err, lists)
+            {
+                if (err) return;
+                lists.forEach(function(list)
+                {
+                    TaskModel.find({ 'list_ids': { $in: [list.id] }}, function(err, tasks) {
+                        tasks.forEach(function(task)
+                        {
+                            list.task_ids.push(task._id);
+                        });
+                        list.save();
+                    });
+                });
+            });
+
             if (!err) console.log('Fixtures loaded');
         });
     });

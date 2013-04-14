@@ -11,13 +11,10 @@ This is a learning experiment so don't expect anything good right away... or eve
 * spend the next month illustrating a mascot
 * get coding
 
-## Next
-
-* finish API and tests
-* update Ember templates to match API
-
 ## Done
 
+* update Ember templates
+* update API and use Ember Data
 * add Mocha tests for tasks
 * add Mongoose and schema
 * start Mocha tests for API
