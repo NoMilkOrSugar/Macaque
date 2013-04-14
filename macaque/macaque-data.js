@@ -80,7 +80,11 @@ var onSuccess = function(res, data)
 
 exports.findLists = function(req, res)
 {
-    ListModel.find({ 'hidden': false }, function(err, lists) {
+    var query = { 'hidden': false };
+    if (Array.isArray(req.query.ids)) {
+        query['_id'] = { $in: req.query.ids };
+    }
+    ListModel.find(query, function(err, lists) {
         if (err) return onError(res, err);
         onSuccess(res, { 'lists': lists });
     });
@@ -131,7 +135,11 @@ exports.deleteList = function(req, res)
 
 exports.findTasks = function(req, res)
 {
-    TaskModel.find({ 'hidden': false }, function(err, tasks) {
+    var query = { 'hidden': false };
+    if (Array.isArray(req.query.ids)) {
+        query['_id'] = { $in: req.query.ids };
+    }
+    TaskModel.find(query, function(err, tasks) {
         if (err) return onError(res, err);
         onSuccess(res, { 'tasks': tasks });
     });
