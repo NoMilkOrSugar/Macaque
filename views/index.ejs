@@ -29,10 +29,10 @@
 </script>
 
 <script type="text/x-handlebars" data-template-name="index">
-    <h2>Categories</h2>
+    <h2>Lists:</h2>
     <ul>
-    {{#each category in model}}
-        <li>{{#linkTo 'category' category}}{{category.id}}{{/linkTo}}</li>
+    {{#each list in model}}
+        <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
     {{/each}}
     </ul>
 </script>
@@ -42,34 +42,31 @@
     <p>Coming soon…</p>
 </script>
 
-<script type="text/x-handlebars" data-template-name="category">
-    <h2>Category ({{id}})</h2>
-
-    {{outlet}}
-
-    {{#if loaded}}
-        <ul>
-        {{#each item in tasks}}
-            <li>{{#linkTo 'task' item}}{{item.id}}: {{item.text}}{{/linkTo}}</li>
-        {{/each}}
-        </ul>
-    {{else}}
-        <p>Loading…</p>
-    {{/if}}
+<script type="text/x-handlebars" data-template-name="list">
+    <h2>List: {{name}}</h2>
+    <h3>Tasks:</h3>
+    <ul>
+    {{#each task in tasks}}
+        <li>{{#linkTo 'task' task}}{{task.text}}{{/linkTo}}</li>
+    {{/each}}
+    </ul>
 </script>
 
+
 <script type="text/x-handlebars" data-template-name="task">
-    <h2>Task</h2>
-    {{#if loaded}}
-        <p>{{id}}: {{text}}</p>
-    {{else}}
-        <p>Loading…</p>
-    {{/if}}
+    <h2>Task: {{text}}</h2>
+    <h3>Lists:</h3>
+    <ul>
+    {{#each list in lists}}
+    <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
+    {{/each}}
+    </ul>
 </script>
 
 <script src="/js/vendor/jquery-1.9.1.min.js"></script>
 <script src="/js/vendor/handlebars-1.0.0-rc.3.min.js"></script>
 <script src="/js/vendor/ember-1.0.0-rc.2.js"></script>
+<script src="/js/vendor/ember-data.js"></script>
 <script src="/js/vendor/moment.min.js"></script>
 <script src="/js/vendor/pikaday.min.js"></script>
 <script src="/js/macaque.js"></script>
