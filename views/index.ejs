@@ -10,48 +10,50 @@
 <body>
 
 <script type="text/x-handlebars">
-
-    <h1><%= title %></h1>
-
-    <nav role="navigation">
-        <ul>
-            <li>{{#linkTo 'index'}}Index{{/linkTo}}</li>
-            <li>{{#linkTo 'about'}}About{{/linkTo}}</li>
-        </ul>
-    </nav>
+    <h1>{{#linkTo 'index'}}<%= title %>{{/linkTo}}</h1>
 
     {{outlet}}
 
     <footer role="contentinfo">
         <small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small>
     </footer>
-
 </script>
 
 <script type="text/x-handlebars" data-template-name="index">
     <h2>Lists:</h2>
     <ul>
-    {{#each list in model}}
+    {{#each list in lists}}
         <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
     {{/each}}
     </ul>
 </script>
 
-<script type="text/x-handlebars" data-template-name="about">
-    <h2>About</h2>
-    <p>Coming soon…</p>
-</script>
-
 <script type="text/x-handlebars" data-template-name="list">
-    <h2>List: {{name}}</h2>
+    {{#if isEditing }}
+        {{partial 'list/edit'}}
+        <button {{action save}}>Save</button>
+    {{else}}
+        <h2>List: {{name}}</h2>
+        <button {{action edit}}>Edit</button>
+    {{/if}}
     <h3>Tasks:</h3>
     <ul>
     {{#each task in tasks}}
         <li>{{#linkTo 'task' task}}{{task.text}}{{/linkTo}}</li>
     {{/each}}
     </ul>
+    {{view Macaque.TaskCreateView}}
+    <p>Modified: {{fromNow modified}}
 </script>
 
+<script type="text/x-handlebars" data-template-name="list/_edit">
+    {{view Ember.TextField valueBinding="name"}}
+</script>
+
+<script type="text/x-handlebars" data-template-name="task-create">
+    {{view Ember.TextField id="task-create-text" valueBinding="controller.newTask.text"}}
+    <button id="task-create-button">Create</button>
+</script>
 
 <script type="text/x-handlebars" data-template-name="task">
     <h2>Task: {{text}}</h2>

@@ -80,7 +80,11 @@ var onSuccess = function(res, data)
 
 exports.findLists = function(req, res)
 {
-    ListModel.find({ 'hidden': false }, function(err, lists) {
+    var query = { 'hidden': false };
+    if (Array.isArray(req.query.ids)) {
+        query['_id'] = { $in: req.query.ids };
+    }
+    ListModel.find(query, function(err, lists) {
         if (err) return onError(res, err);
         onSuccess(res, { 'lists': lists });
     });
@@ -102,7 +106,7 @@ exports.findList = function(req, res)
 
 exports.addList = function(req, res)
 {
-    var list = new ListModel(req.body);
+    var list = new ListModel(req.body.list);
     list.save(function(err) {
         if (err) return onError(res, err);
         onSuccess(res, { 'list': list });
@@ -111,7 +115,9 @@ exports.addList = function(req, res)
 
 exports.updateList  = function(req, res)
 {
-    var list = ListModel.findByIdAndUpdate(req.params.id, req.body, function(err, list) {
+    var doc = req.body.list;
+    doc.modified = new Date();
+    var list = ListModel.findByIdAndUpdate(req.params.id, doc, function(err, list) {
         if (err) return onError(res, err);
         onSuccess(res, { 'list': list });
     });
@@ -131,7 +137,11 @@ exports.deleteList = function(req, res)
 
 exports.findTasks = function(req, res)
 {
-    TaskModel.find({ 'hidden': false }, function(err, tasks) {
+    var query = { 'hidden': false };
+    if (Array.isArray(req.query.ids)) {
+        query['_id'] = { $in: req.query.ids };
+    }
+    TaskModel.find(query, function(err, tasks) {
         if (err) return onError(res, err);
         onSuccess(res, { 'tasks': tasks });
     });
@@ -153,16 +163,34 @@ exports.findTask = function(req, res)
 
 exports.addTask = function(req, res)
 {
-    var task = new TaskModel(req.body);
+    var task = new TaskModel(req.body.task);
+
+    // list id passed by Ember
+    var init_list = req.body.task.list;
+    if (init_list) {
+        task.list_ids.push(req.body.task.list);
+    }
+
     task.save(function(err) {
         if (err) return onError(res, err);
+        if (init_list) {
+            var list = ListModel.findOne({ '_id': init_list }, function(err, list)
+            {
+                if (!err) {
+                    list.task_ids.push(task._id);
+                    list.save();
+                }
+            });
+        }
         onSuccess(res, { 'task': task });
     });
 };
 
 exports.updateTask  = function(req, res)
 {
-    var task = TaskModel.findByIdAndUpdate(req.params.id, req.body, function(err, task) {
+    var doc = req.body.task;
+    doc.modified = new Date();
+    var task = TaskModel.findByIdAndUpdate(req.params.id, doc, function(err, task) {
         if (err) return onError(res, err);
         onSuccess(res, { 'task': task });
     });

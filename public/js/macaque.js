@@ -3,6 +3,11 @@
  * Copyright (c) David Bushell | @dbushell | http://dbushell.com/
  */
 
+Ember.Handlebars.registerBoundHelper('fromNow', function(date)
+{
+    return moment(date).fromNow();
+});
+
 Macaque = Ember.Application.create({
     LOG_TRANSITIONS: true
 });
@@ -11,7 +16,10 @@ Macaque = Ember.Application.create({
 Macaque.Router.reopen({ location: 'history' });
 
 Macaque.Store = DS.Store.extend({
-  revision: 12
+    revision: 12,
+    adapter: DS.RESTAdapter.extend({
+        url: 'http://localhost:3000'
+    })
 });
 
 Macaque.List = DS.Model.extend({
@@ -28,7 +36,11 @@ Macaque.Task = DS.Model.extend({
     modified  : DS.attr('date'),
     completed : DS.attr('boolean'),
     hidden    : DS.attr('boolean'),
-    lists     : DS.hasMany('Macaque.List')
+    lists     : DS.hasMany('Macaque.List'),
+
+    // so we can pass the parent upon creation but return list_ids
+    // the RESTAdapter doesnt seem to send or update hasMany relationships
+    list      : DS.attr('string')
 });
 
 DS.RESTAdapter.configure('plurals', {
@@ -42,14 +54,14 @@ DS.RESTAdapter.reopen({
 
 Macaque.Router.map(function()
 {
-    this.route('about', { path: '/about' });
+    // this.route('about', { path: '/about' });
 
     this.resource('list', { path: '/list/:id' }, function() {
-        this.route('edit', { path: '/edit' });
+        // this.route('edit', { path: '/edit' });
     });
 
     this.resource('task', { path: '/task/:id'}, function() {
-        this.route('edit', { path: '/edit' });
+        // this.route('edit', { path: '/edit' });
     });
 });
 
@@ -78,6 +90,11 @@ Macaque.IndexRoute = Ember.Route.extend({
     model: function()
     {
         return Macaque.List.find();
+    },
+
+    setupController: function(controller, model)
+    {
+        controller.set('lists', model);
     }
 });
 
@@ -107,12 +124,69 @@ Macaque.ListRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
-
+        controller.set('content', model);
+        controller.set('isEditing', false);
+        controller.set('newTask', { text: '', 'list': model.id });
     }
 });
 
 Macaque.ListController = Ember.ObjectController.extend({
 
+    isEditing: false,
+
+    edit: function()
+    {
+        this.set('isEditing', true);
+    },
+
+    save: function()
+    {
+        this.set('isEditing', false);
+        this.get('store').commit();
+    },
+
+    create: function()
+    {
+        var list = Macaque.List.find(this.content.id),
+            task = Macaque.Task.createRecord(this.get('newTask'));
+
+        task.set('created', new Date());
+        task.set('modified', new Date());
+
+        // https://github.com/emberjs/data/issues/405
+        // http://stackoverflow.com/questions/15624193/many-to-many-relationships-with-ember-ember-data-and-rails
+        // https://gist.github.com/stefanpenner/9ccb0503e451a9792ed0
+
+        task.addObserver('id', function(task)
+        {
+            setTimeout(function() {
+                list.get('tasks').pushObject(Macaque.Task.find(task.id));
+                list.get('transaction').commit();
+            }, 1);
+        });
+
+        task.get('transaction').commit();
+
+        this.set('newTask', { text: '' });
+    }
+});
+
+Macaque.TaskCreateView = Ember.View.extend({
+
+    templateName: 'task-create',
+
+    classNames: ['task-create-view'],
+
+    click: function(e)
+    {
+        if (e.target.id === 'task-create-button') {
+            field = document.getElementById('task-create-text');
+            if (!field.value || /^\s*$/.test(field.value)) {
+                return;
+            }
+            this.get('controller').send('create');
+        }
+    }
 });
 
 /* ==========================================================================
@@ -141,7 +215,6 @@ Macaque.TaskRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
-
     }
 });
 
