@@ -86,7 +86,7 @@ describe('Macaque API', function()
                 var json = JSON.parse(data);
                 assert.equal(true, typeof json.error === 'string');
                 done();
-            }, 'POST', { 'name': null });
+            }, 'POST', { 'list': { 'name': null } });
         });
 
         it('should add and remove a new list', function(done)
@@ -103,7 +103,7 @@ describe('Macaque API', function()
                     assert.equal(true, json.success);
                     done();
                 }, 'DELETE');
-            }, 'POST', { 'name': name });
+            }, 'POST', { 'list': { 'name': name } });
         });
 
         it('should add, edit, and remove a new list', function(done)
@@ -126,8 +126,8 @@ describe('Macaque API', function()
                         assert.equal(true, json.success);
                         done();
                     }, 'DELETE');
-                }, 'PUT', { 'name': name + '_edit' });
-            }, 'POST', { 'name': name });
+                }, 'PUT', { 'list': { 'name': name + '_edit' } });
+            }, 'POST', { 'list': { 'name': name } });
         });
 
     }); // Lists
@@ -167,7 +167,7 @@ describe('Macaque API', function()
                 var json = JSON.parse(data);
                 assert.equal(true, typeof json.error === 'string');
                 done();
-            }, 'POST', { 'text': null });
+            }, 'POST', { 'task': { 'text': null } });
         });
 
         it('should add and remove a new task', function(done)
@@ -184,7 +184,7 @@ describe('Macaque API', function()
                     assert.equal(true, json.success);
                     done();
                 }, 'DELETE');
-            }, 'POST', { 'text': text });
+            }, 'POST', { 'task': { 'text': text }});
         });
 
 
@@ -206,7 +206,7 @@ describe('Macaque API', function()
                         assert.equal(true, json.success);
                         done();
                     }, 'DELETE');
-                }, 'POST', { 'text': text, 'list_ids': [list.id] });
+                }, 'POST', { 'task': { 'text': text, 'list_ids': [list.id] } });
             });
         });
 
@@ -228,8 +228,8 @@ describe('Macaque API', function()
                         assert.equal(true, json.success);
                         done();
                     }, 'DELETE');
-                }, 'PUT', { 'text': text + '_edit' });
-            }, 'POST', { 'text': text });
+                }, 'PUT', { 'task': { 'text': text + '_edit' } });
+            }, 'POST', { 'task': { 'text': text } });
         });
 
     }); // Tasks
