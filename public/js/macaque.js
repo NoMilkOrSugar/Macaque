@@ -36,17 +36,17 @@ Macaque.Task = DS.Model.extend({
     modified  : DS.attr('date'),
     completed : DS.attr('boolean'),
     hidden    : DS.attr('boolean'),
-    lists     : DS.hasMany('Macaque.List')
+    lists     : DS.hasMany('Macaque.List'),
+
+    // so we can pass the parent upon creation but return list_ids
+    // the RESTAdapter doesnt seem to send or update hasMany relationships
+    list      : DS.attr('string')
 });
 
 DS.RESTAdapter.configure('plurals', {
     list: 'lists',
     task: 'tasks'
 });
-
-// DS.RESTAdapter.map('Macaque.Task', {
-//   lists: { embedded: 'always' }
-// });
 
 DS.RESTAdapter.reopen({
     namespace: 'api'
@@ -126,7 +126,7 @@ Macaque.ListRoute = Ember.Route.extend({
     {
         controller.set('content', model);
         controller.set('isEditing', false);
-        controller.set('newTask', { text: 'Apple' });
+        controller.set('newTask', { text: '', 'list': model.id });
     }
 });
 
@@ -145,55 +145,29 @@ Macaque.ListController = Ember.ObjectController.extend({
         this.get('store').commit();
     },
 
-    actionToFire: function(e)
-    {
-        console.log('FIRE!');
-        console.log(e.get('id'));
-    },
-
     create: function()
     {
-        var list = Macaque.List.find(this.content.id);
-
-        var store = this.get('store');
-
-        var task = Macaque.Task.createRecord(this.get('newTask'));
-        // var task = list.get('tasks').createRecord(this.get('newTask'));
+        var list = Macaque.List.find(this.content.id),
+            task = Macaque.Task.createRecord(this.get('newTask'));
 
         task.set('created', new Date());
         task.set('modified', new Date());
-        // task.get('lists').pushObject(list.id);
-        // list.get('tasks').pushObject(task);
-
-        task.one('didCreate', function(task)
-        {
-            console.log('didCreate:' + task.get('text'));
-        });
 
         // https://github.com/emberjs/data/issues/405
+        // http://stackoverflow.com/questions/15624193/many-to-many-relationships-with-ember-ember-data-and-rails
+        // https://gist.github.com/stefanpenner/9ccb0503e451a9792ed0
+
         task.addObserver('id', function(task)
         {
-            console.log('task id: ' + task.get('id'));
-            // list.get('tasks').pushObject(Macaque.Task.find(task.id));
-
-            // setTimeout(function() {
-                // task.get('lists').pushObject(list);
-                // task.get('transaction').commit();
-            // }, 100);
-
-            // task.addObserver('lists', function(task) {
-            //     console.log('test!');
-            // });
-            // task.get('transaction').commit();
-            // list.get('tasks').pushObject(task);
-            // store.commit();
+            setTimeout(function() {
+                list.get('tasks').pushObject(Macaque.Task.find(task.id));
+                list.get('transaction').commit();
+            }, 1);
         });
 
-        // store.commit();
         task.get('transaction').commit();
 
-
-        // console.log(task);
+        this.set('newTask', { text: '' });
     }
 });
 
