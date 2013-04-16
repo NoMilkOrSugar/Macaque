@@ -164,8 +164,24 @@ exports.findTask = function(req, res)
 exports.addTask = function(req, res)
 {
     var task = new TaskModel(req.body.task);
+
+    // list id passed by Ember
+    var init_list = req.body.task.list;
+    if (init_list) {
+        task.list_ids.push(req.body.task.list);
+    }
+
     task.save(function(err) {
         if (err) return onError(res, err);
+        if (init_list) {
+            var list = ListModel.findOne({ '_id': init_list }, function(err, list)
+            {
+                if (!err) {
+                    list.task_ids.push(task._id);
+                    list.save();
+                }
+            });
+        }
         onSuccess(res, { 'task': task });
     });
 };
