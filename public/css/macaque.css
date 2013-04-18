@@ -50,3 +50,38 @@ h2 .badge {
     margin: 0;
     padding-top: 6px;
 }
+
+.view-title input[type="checkbox"],
+.list-view-tasks input[type="checkbox"] {
+    display: block;
+    float: left;
+    margin: 0 10px 0 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none;
+    outline: none;
+}
+
+.view-title input[type="checkbox"]:before,
+.list-view-tasks input[type="checkbox"]:before {
+    display: block;
+    content: "";
+    width: 18px;
+    height: 18px;
+    background: transparent url("../img/icon-checkbox.svg") 0 0 no-repeat;
+    background-size: 100% 100%;
+}
+
+.view-title input[type="checkbox"]:checked:before,
+.list-view-tasks input[type="checkbox"]:checked:before {
+    background-image: url("../img/icon-checkbox-active.svg");
+}
+
+.view-title input[type="checkbox"] {
+    margin: 5px 10px 0 0;
+}
+.view-title input[type="checkbox"]:before {
+    width: 30px;
+    height: 30px;
+}
