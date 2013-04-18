@@ -5,6 +5,8 @@ Macaque
 
 This is a learning experiment so don't expect anything good right away... or ever.
 
+![Macaque Screenshot](https://raw.github.com/dbushell/Macaque/master/public/img/screenshot.png)
+
 ## To-do
 
 * move this to-do into a working version of Macaque
