@@ -113,6 +113,15 @@ exports.addList = function(req, res)
     });
 };
 
+var updateList = function(id, doc)
+{
+    doc.modified = new Date();
+    var list = ListModel.findByIdAndUpdate(req.params.id, doc, function(err, list) {
+        if (err) return onError(res, err);
+        onSuccess(res, { 'list': list });
+    });
+};
+
 exports.updateList  = function(req, res)
 {
     var doc = req.body.list;
@@ -151,6 +160,10 @@ exports.findTask = function(req, res)
 {
     TaskModel.find({ '_id': req.params.id }, function(err, task) {
         if (err) return onError(res, err);
+        if (!task.length || !task[0].list_ids) {
+            onSuccess(res, { 'task': task[0] });
+            return;
+        }
         ListModel.find({ 'hidden': false, '_id': { $in: task[0].list_ids }}, function(err, lists) {
             if (!err) {
                 onSuccess(res, { 'task': task[0], 'lists': lists });
@@ -174,12 +187,10 @@ exports.addTask = function(req, res)
     task.save(function(err) {
         if (err) return onError(res, err);
         if (init_list) {
-            var list = ListModel.findOne({ '_id': init_list }, function(err, list)
-            {
-                if (!err) {
-                    list.task_ids.push(task._id);
-                    list.save();
-                }
+            var list = ListModel.findOne({ '_id': init_list }, function(err, list) {
+                if (err) return;
+                list.task_ids.push(task._id);
+                list.save();
             });
         }
         onSuccess(res, { 'task': task });
@@ -198,9 +209,17 @@ exports.updateTask  = function(req, res)
 
 exports.deleteTask = function(req, res)
 {
-    TaskModel.remove({ '_id': req.params.id }, function(err) {
+    var task_id =req.params.id;
+    TaskModel.remove({ '_id': task_id }, function(err) {
         if (err) return onError(res, err);
-        onSuccess(res);
+        ListModel.find({ 'task_ids': { $in: [task_id] }}, function(err, lists) {
+            if (err || !lists.length) onSuccess(res, { 'task': null });
+            lists.forEach(function(list) {
+                list.task_ids.remove(task_id);
+                list.save();
+            });
+            onSuccess(res, { 'task': null });
+        });
     });
 };
 

@@ -3,8 +3,7 @@
  * Copyright (c) David Bushell | @dbushell | http://dbushell.com/
  */
 
-Ember.Handlebars.registerBoundHelper('fromNow', function(date)
-{
+Ember.Handlebars.registerBoundHelper('fromNow', function(date) {
     return moment(date).fromNow();
 });
 
@@ -19,6 +18,7 @@ Macaque.Store = DS.Store.extend({
     revision: 12,
     adapter: DS.RESTAdapter.extend({
         url: 'http://localhost:3000'
+        // bulkCommit: true
     })
 });
 
@@ -40,7 +40,13 @@ Macaque.Task = DS.Model.extend({
 
     // so we can pass the parent upon creation but return list_ids
     // the RESTAdapter doesnt seem to send or update hasMany relationships
-    list      : DS.attr('string')
+    list      : DS.attr('string'),
+
+    completedChange: function () {
+        Ember.run.once(this, function () {
+            this.get('store').commit();
+        });
+    }.observes('completed')
 });
 
 DS.RESTAdapter.configure('plurals', {
@@ -51,6 +57,13 @@ DS.RESTAdapter.configure('plurals', {
 DS.RESTAdapter.reopen({
     namespace: 'api'
 });
+
+
+// Macaque.Store.adapter.set('bulkCommit', true);
+
+// DS.RESTAdapter.map(Macaque.List, {
+//     tasks: { embedded: 'load' }
+// });
 
 Macaque.Router.map(function()
 {
@@ -147,7 +160,7 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     create: function()
     {
-        var list = Macaque.List.find(this.content.id),
+        var list = Macaque.List.find(this.get('content').id),
             task = Macaque.Task.createRecord(this.get('newTask'));
 
         task.set('created', new Date());
@@ -167,7 +180,7 @@ Macaque.ListController = Ember.ObjectController.extend({
 
         task.get('transaction').commit();
 
-        this.set('newTask', { text: '' });
+        this.set('newTask', { text: '', 'list': list.id });
     }
 });
 
@@ -195,7 +208,14 @@ Macaque.TaskCreateView = Ember.View.extend({
 
 Macaque.TaskView = Ember.View.extend({
 
-    classNames: ['task-view']
+    classNames: ['task-view'],
+
+    change: function (e)
+    {
+        // if (e.target.id === 'task-completed') {
+        //     this.get('controller').send('update');
+        // }
+    }
 
 });
 
@@ -215,9 +235,39 @@ Macaque.TaskRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
+        controller.set('content', model);
+    },
+
+    events: {
+        remove: function()
+        {
+            var task = this.get('controller').get('model'),
+                list = task.get('lists').objectAt(0);
+
+            this.get('controller').removeTask(task, list);
+
+            if (list) {
+                // why does this throw and error sometimes?
+                this.transitionTo('list', list);
+            } else {
+                this.transitionTo('index');
+            }
+        }
     }
 });
 
 Macaque.TaskController = Ember.ObjectController.extend({
+
+    removeTask: function(task, list)
+    {
+        task.one('didDelete', this, function() {
+            // list.get('tasks').removeObject(task);
+            // list.get('transaction').commit();
+        });
+        task.set('text', '');
+        task.deleteRecord();
+        this.get('store').commit();
+        // task.get('transaction').commit();
+    }
 
 });

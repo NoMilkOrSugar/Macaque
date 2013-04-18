@@ -31,19 +31,24 @@
 <script type="text/x-handlebars" data-template-name="list">
     {{#if isEditing }}
         {{partial 'list/edit'}}
-        <button {{action save}}>Save</button>
+        <button {{action save}}>Save List</button>
     {{else}}
         <h2>List: {{name}}</h2>
-        <button {{action edit}}>Edit</button>
+        <button {{action edit}}>Edit List</button>
     {{/if}}
     <h3>Tasks:</h3>
     <ul>
     {{#each task in tasks}}
-        <li>{{#linkTo 'task' task}}{{task.text}}{{/linkTo}}</li>
+
+        <li>
+            {{view Ember.Checkbox checkedBinding="task.completed"}}
+            {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}{{isDeleted}}
+        </li>
+
     {{/each}}
     </ul>
     {{view Macaque.TaskCreateView}}
-    <p>Modified: {{fromNow modified}}
+    <p>Modified: {{fromNow modified}}</p>
 </script>
 
 <script type="text/x-handlebars" data-template-name="list/_edit">
@@ -51,18 +56,20 @@
 </script>
 
 <script type="text/x-handlebars" data-template-name="task-create">
-    {{view Ember.TextField id="task-create-text" valueBinding="controller.newTask.text"}}
-    <button id="task-create-button">Create</button>
+    {{view Ember.TextField valueBinding="controller.newTask.text" id="task-create-text"}}
+    <button id="task-create-button">Add Task</button>
 </script>
 
 <script type="text/x-handlebars" data-template-name="task">
-    <h2>Task: {{text}}</h2>
+    <h2>{{view Ember.Checkbox checkedBinding="completed" id="task-completed"}} Task: {{text}}</h2>
+    <button {{action remove}}>Delete Task</button>
     <h3>Lists:</h3>
     <ul>
     {{#each list in lists}}
     <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
     {{/each}}
     </ul>
+    <p>Modified: {{fromNow modified}}</p>
 </script>
 
 <script src="/js/vendor/jquery-1.9.1.min.js"></script>
