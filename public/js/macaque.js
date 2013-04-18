@@ -139,7 +139,6 @@ Macaque.ListView = Ember.View.extend({
 
     keyDown: function(e)
     {
-        console.log(e.keyCode);
         if (e.target.id === 'list-view-edit-field') {
             if ($.inArray(e.keyCode, [13, 27]) !== -1) {
               this.get('controller').send('endEdit');
@@ -258,7 +257,6 @@ Macaque.TaskView = Ember.View.extend({
 
     keyDown: function(e)
     {
-        console.log(e.keyCode);
         if (e.target.id === 'task-view-edit-field') {
             if ($.inArray(e.keyCode, [13, 27]) !== -1) {
               this.get('controller').send('endEdit');
