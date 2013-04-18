@@ -39,9 +39,9 @@
     <h3>Tasks:</h3>
     <ul>
     {{#each task in tasks}}
-        {{#unless task.hidden}}
+        {{#unless task.isHidden}}
         <li>
-            {{view Ember.Checkbox checkedBinding="task.completed"}}
+            {{view Ember.Checkbox checkedBinding="task.isComplete"}}
             {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
         </li>
         {{/unless}}
@@ -61,8 +61,14 @@
 </script>
 
 <script type="text/x-handlebars" data-template-name="task">
-    <h2>{{view Ember.Checkbox checkedBinding="completed" id="task-completed"}} Task: {{text}}</h2>
-    <button {{action remove}}>Delete Task</button>
+    {{#if isEditing }}
+        {{partial 'task/edit'}}
+        <button {{action save}}>Save Task</button>
+        <button {{action remove}}>Delete Task</button>
+    {{else}}
+        <h2>{{view Ember.Checkbox checkedBinding="isComplete"}} {{text}}</h2>
+        <button {{action edit}}>Edit Task</button>
+    {{/if}}
     <h3>Lists:</h3>
     <ul>
     {{#each list in lists}}
@@ -70,6 +76,10 @@
     {{/each}}
     </ul>
     <p>Modified: {{fromNow modified}}</p>
+</script>
+
+<script type="text/x-handlebars" data-template-name="task/_edit">
+    {{view Ember.TextField valueBinding="text"}}
 </script>
 
 <script src="/js/vendor/jquery-1.9.1.min.js"></script>

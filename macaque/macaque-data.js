@@ -13,11 +13,11 @@ var validateString = function(val)
 };
 
 var listSchema = mongoose.Schema({
-    'name'     : { 'type': String, 'default': 'Untitled', validate: validateString },
-    'created'  : { 'type': Date, 'default': Date.now },
-    'modified' : { 'type': Date, 'default': Date.now },
-    'hidden'   : { 'type': Boolean, 'default': false },
-    'task_ids' : [{ 'type': ObjectId, ref: 'TaskModel' }]
+    'name'      : { 'type': String, 'default': 'Untitled', validate: validateString },
+    'created'   : { 'type': Date, 'default': Date.now },
+    'modified'  : { 'type': Date, 'default': Date.now },
+    'is_hidden' : { 'type': Boolean, 'default': false },
+    'task_ids'  : [{ 'type': ObjectId, ref: 'TaskModel' }]
 });
 
 listSchema.virtual('id').get(function() {
@@ -29,12 +29,12 @@ listSchema.set('toJSON', {
 });
 
 var taskSchema = mongoose.Schema({
-    'text'      : { 'type': String, 'default': 'Untitled', validate: validateString },
-    'created'   : { 'type': Date, 'default': Date.now },
-    'modified'  : { 'type': Date, 'default': Date.now },
-    'completed' : { 'type': Boolean, 'default': false },
-    'hidden'    : { 'type': Boolean, 'default': false },
-    'list_ids'  : [{ 'type': ObjectId, ref: 'ListModel' }]
+    'text'        : { 'type': String, 'default': 'Untitled', validate: validateString },
+    'created'     : { 'type': Date, 'default': Date.now },
+    'modified'    : { 'type': Date, 'default': Date.now },
+    'is_complete' : { 'type': Boolean, 'default': false },
+    'is_hidden'   : { 'type': Boolean, 'default': false },
+    'list_ids'    : [{ 'type': ObjectId, ref: 'ListModel' }]
 });
 
 taskSchema.virtual('id').get(function() {
@@ -80,7 +80,7 @@ var onSuccess = function(res, data)
 
 exports.findLists = function(req, res)
 {
-    var query = { 'hidden': false };
+    var query = { 'is_hidden': false };
     if (Array.isArray(req.query.ids)) {
         query['_id'] = { $in: req.query.ids };
     }
@@ -94,7 +94,7 @@ exports.findList = function(req, res)
 {
     ListModel.find({ '_id': req.params.id }, function(err, list) {
         if (err) return onError(res, err);
-        TaskModel.find({ 'hidden': false, 'list_ids': { $in: [req.params.id] }}, function(err, tasks) {
+        TaskModel.find({ 'is_hidden': false, 'list_ids': { $in: [req.params.id] }}, function(err, tasks) {
             if (!err) {
                 onSuccess(res, { 'list': list[0], 'tasks': tasks });
             } else {
@@ -146,7 +146,7 @@ exports.deleteList = function(req, res)
 
 exports.findTasks = function(req, res)
 {
-    var query = { 'hidden': false };
+    var query = { 'is_hidden': false };
     if (Array.isArray(req.query.ids)) {
         query['_id'] = { $in: req.query.ids };
     }
@@ -164,7 +164,7 @@ exports.findTask = function(req, res)
             onSuccess(res, { 'task': task[0] });
             return;
         }
-        ListModel.find({ 'hidden': false, '_id': { $in: task[0].list_ids }}, function(err, lists) {
+        ListModel.find({ 'is_hidden': false, '_id': { $in: task[0].list_ids }}, function(err, lists) {
             if (!err) {
                 onSuccess(res, { 'task': task[0], 'lists': lists });
             } else {

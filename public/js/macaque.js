@@ -26,27 +26,27 @@ Macaque.List = DS.Model.extend({
     name     : DS.attr('string'),
     created  : DS.attr('date'),
     modified : DS.attr('date'),
-    hidden   : DS.attr('boolean'),
+    isHidden : DS.attr('boolean'),
     tasks    : DS.hasMany('Macaque.Task')
 });
 
 Macaque.Task = DS.Model.extend({
-    text      : DS.attr('string'),
-    created   : DS.attr('date'),
-    modified  : DS.attr('date'),
-    completed : DS.attr('boolean'),
-    hidden    : DS.attr('boolean'),
-    lists     : DS.hasMany('Macaque.List'),
+    text       : DS.attr('string'),
+    created    : DS.attr('date'),
+    modified   : DS.attr('date'),
+    isComplete : DS.attr('boolean'),
+    isHidden   : DS.attr('boolean'),
+    lists      : DS.hasMany('Macaque.List'),
 
     // so we can pass the parent upon creation but return list_ids
     // the RESTAdapter doesnt seem to send or update hasMany relationships
     list      : DS.attr('string'),
 
-    completedChange: function () {
+    isCompleteChange: function () {
         Ember.run.once(this, function () {
             this.get('store').commit();
         });
-    }.observes('completed')
+    }.observes('isComplete')
 });
 
 DS.RESTAdapter.configure('plurals', {
@@ -208,14 +208,7 @@ Macaque.TaskCreateView = Ember.View.extend({
 
 Macaque.TaskView = Ember.View.extend({
 
-    classNames: ['task-view'],
-
-    change: function (e)
-    {
-        // if (e.target.id === 'task-completed') {
-        //     this.get('controller').send('update');
-        // }
-    }
+    classNames: ['task-view']
 
 });
 
@@ -257,6 +250,19 @@ Macaque.TaskRoute = Ember.Route.extend({
 
 Macaque.TaskController = Ember.ObjectController.extend({
 
+    isEditing: false,
+
+    edit: function()
+    {
+        this.set('isEditing', true);
+    },
+
+    save: function()
+    {
+        this.set('isEditing', false);
+        this.get('store').commit();
+    },
+
     removeTask: function(task, list)
     {
         task.one('didDelete', this, function()
@@ -265,8 +271,9 @@ Macaque.TaskController = Ember.ObjectController.extend({
             list.set('modified', new Date());
             list.get('transaction').commit();
         });
+
         // hide from template until the task is deleted
-        task.set('hidden', true);
+        task.set('isHidden', true);
         task.deleteRecord();
         // this.get('store').commit();
         task.get('transaction').commit();
