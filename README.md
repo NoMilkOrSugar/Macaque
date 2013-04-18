@@ -13,6 +13,10 @@ This is a learning experiment so don't expect anything good right away... or eve
 
 ## Done
 
+* add task pagination
+* add list breadcrumb
+* add Twitter Bootstrap
+* add task deletion
 * update Ember templates
 * update API and use Ember Data
 * add Mocha tests for tasks

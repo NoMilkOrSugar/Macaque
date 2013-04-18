@@ -1,0 +1,52 @@
+html {
+    overflow-y: scroll;
+}
+
+body {
+    padding-top: 80px;
+}
+
+@media (max-width: 979px) {
+    body {
+        padding-top: 0;
+    }
+    .navbar .brand {
+        margin: 0;
+    }
+}
+
+h2 .badge {
+    font-size: 14px;
+    padding: 4px 8px;
+    vertical-align: 4px;
+}
+
+.well .nav:last-child,
+.well .input-append:last-child {
+    margin-bottom: 0;
+}
+
+.well .nav > li:not(.active) > a:hover {
+    background-color: #fff;
+}
+
+/* ==========================================================================
+   List / Task Views
+   ========================================================================== */
+
+.view-title {
+    margin-top: 0;
+}
+
+.list-view-actions,
+.task-view-actions {
+    margin-top: 6px;
+}
+
+.list-edit-view,
+.task-edit-view {
+    display: block;
+    height: 44px;
+    margin: 0;
+    padding-top: 6px;
+}

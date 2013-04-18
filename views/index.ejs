@@ -4,65 +4,184 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="copyright" content="Copyright © David Bushell | @dbushell | http://dbushell.com/">
+
     <title><%= title %></title>
+
     <link rel="shortcut icon" href="/favicon.ico">
+    <!-- <link rel="stylesheet" href="css/normalize.css"> -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/bootstrap-responsive.min.css">
+    <link rel="stylesheet" href="/css/macaque.css">
 </head>
 <body>
 
 <script type="text/x-handlebars">
-    <h1>{{#linkTo 'index'}}<%= title %>{{/linkTo}}</h1>
+
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            {{#linkTo 'index' class="brand"}}<%= title %>{{/linkTo}}
+        </div>
+    </div>
+</nav>
+
+<div class="container">
 
     {{outlet}}
 
     <footer role="contentinfo">
-        <small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small>
+        <p><small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small></p>
     </footer>
+
+</div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="index">
-    <h2>Lists:</h2>
-    <ul>
-    {{#each list in lists}}
-        <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
-    {{/each}}
+
+    <h2 class="view-title">All Lists</h2>
+    <ul class="breadcrumb">
+        <li class="active">All Lists</li>
     </ul>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Tasks</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{#each list in lists}}
+        <tr>
+            <td>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</td>
+            <td>{{list.taskCount}}</td>
+        </tr>
+        {{/each}}
+        </tbody>
+    </table>
+
 </script>
 
 <script type="text/x-handlebars" data-template-name="list">
+
+    <div class="btn-group pull-right list-view-actions">
+        <button {{action edit}} class="btn" id="list-view-edit-button"><i class="icon-edit"></i> Edit List</button>
+        <button class="btn dropdown-toggle" data-toggle="dropdown">
+        <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+        </ul>
+    </div>
+
     {{#if isEditing }}
         {{partial 'list/edit'}}
-        <button {{action save}}>Save</button>
     {{else}}
-        <h2>List: {{name}}</h2>
-        <button {{action edit}}>Edit</button>
-    {{/if}}
-    <h3>Tasks:</h3>
-    <ul>
-    {{#each task in tasks}}
-        <li>{{#linkTo 'task' task}}{{task.text}}{{/linkTo}}</li>
-    {{/each}}
+        <h2 class="view-title">{{name}} <span class="badge">{{taskCount}}</span></h2>
+    {{/if }}
+
+    <ul class="breadcrumb">
+        <li>{{#linkTo index}}All Lists{{/linkTo}} <span class="divider">/</span></li>
+        <li class="active">{{name}}</li>
     </ul>
+
     {{view Macaque.TaskCreateView}}
-    <p>Modified: {{fromNow modified}}
+
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Task</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{#each task in tasks}}
+            {{#unless task.isHidden}}
+            <tr>
+                <td>
+                {{view Ember.Checkbox checkedBinding="task.isComplete"}}
+                {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}</td>
+            </tr>
+            {{/unless}}
+        {{/each}}
+        </tbody>
+    </table>
+
+    <p>Modified: {{fromNow modified}}</p>
+
 </script>
 
 <script type="text/x-handlebars" data-template-name="list/_edit">
-    {{view Ember.TextField valueBinding="name"}}
+<div class="input-append list-edit-view">
+    {{view Ember.TextField valueBinding="name" id="list-view-edit-field"}}
+    <button class="btn" {{action endEdit}}><i class="icon-ok"></i></button>
+</div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="task-create">
-    {{view Ember.TextField id="task-create-text" valueBinding="controller.newTask.text"}}
-    <button id="task-create-button">Create</button>
+<div class="well well-small">
+    <div class="input-append">
+        {{view Ember.TextField valueBinding="controller.newTask.text" class="input-xxlarge" placeholder="New Task…" id="task-create-text"}}
+        <button class="btn" id="task-create-button"><i class="icon-pencil"></i> Add Task</button>
+    </div>
+</div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="task">
-    <h2>Task: {{text}}</h2>
-    <h3>Lists:</h3>
-    <ul>
-    {{#each list in lists}}
-    <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
-    {{/each}}
+
+
+    <div class="btn-group pull-right task-view-actions">
+        <button {{action edit}} class="btn" id="task-view-edit-button"><i class="icon-edit"></i> Edit Task</button>
+        <button class="btn dropdown-toggle" data-toggle="dropdown">
+        <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a href="#" {{action remove}}><i class="icon-remove"></i> Delete Task</a>
+            </li>
+        </ul>
+    </div>
+
+    {{#if isEditing }}
+        {{partial 'task/edit'}}
+    {{else}}
+        <h2 class="view-title">{{view Ember.Checkbox checkedBinding="isComplete"}} {{text}}</h2>
+    {{/if }}
+
+    <ul class="breadcrumb">
+        <li>{{#linkTo index}}All Lists{{/linkTo}} <span class="divider">/</span></li>
+    {{#if previousList}}
+        <li>{{#linkTo 'list' previousList}}{{previousList.name}}{{/linkTo}} <span class="divider">/</span></li>
+    {{/if}}
+        <li class="active">{{text}}</li>
     </ul>
+
+    <div class="well well-small">
+    <ul class="nav nav-pills">
+        <li class="active">{{#linkTo index}}<strong>Lists</strong>{{/linkTo}}</li>
+        {{#each list in lists}}
+        <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
+        {{/each}}
+    </ul>
+    </div>
+
+    {{#if previousList}}
+    <ul class="pager">
+      <li class="previous">
+        {{#linkTo 'task' previousTask}}&larr; Previous{{/linkTo}}
+      </li>
+      <li class="next">
+        {{#linkTo 'task' nextTask}}Next &rarr;{{/linkTo}}
+      </li>
+    </ul>
+    {{/if}}
+
+    <p>Modified: {{fromNow modified}}</p>
+
+</script>
+
+<script type="text/x-handlebars" data-template-name="task/_edit">
+<div class="input-append task-edit-view">
+    {{view Ember.TextField valueBinding="text" id="task-view-edit-field"}}
+    <button class="btn" {{action endEdit}}><i class="icon-ok"></i></button>
+</div>
 </script>
 
 <script src="/js/vendor/jquery-1.9.1.min.js"></script>
@@ -71,6 +190,7 @@
 <script src="/js/vendor/ember-data.js"></script>
 <script src="/js/vendor/moment.min.js"></script>
 <script src="/js/vendor/pikaday.min.js"></script>
+<script src="/js/vendor/bootstrap.min.js"></script>
 <script src="/js/macaque.js"></script>
 </body>
 </html>

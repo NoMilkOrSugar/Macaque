@@ -181,7 +181,7 @@ describe('Macaque API', function()
                 macaqueAPI('/api/tasks/' + json.task.id, function(data)
                 {
                     json = JSON.parse(data);
-                    assert.equal(true, json.success);
+                    assert.equal(true, json.task === null);
                     done();
                 }, 'DELETE');
             }, 'POST', { 'task': { 'text': text }});
@@ -203,7 +203,7 @@ describe('Macaque API', function()
                     macaqueAPI('/api/tasks/' + json.task.id, function(data)
                     {
                         json = JSON.parse(data);
-                        assert.equal(true, json.success);
+                        assert.equal(true, json.task === null);
                         done();
                     }, 'DELETE');
                 }, 'POST', { 'task': { 'text': text, 'list_ids': [list.id] } });
@@ -225,7 +225,7 @@ describe('Macaque API', function()
                     macaqueAPI('/api/tasks/' + task.id, function(data)
                     {
                         json = JSON.parse(data);
-                        assert.equal(true, json.success);
+                        assert.equal(true, json.task === null);
                         done();
                     }, 'DELETE');
                 }, 'PUT', { 'task': { 'text': text + '_edit' } });

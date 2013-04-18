@@ -13,11 +13,11 @@ var validateString = function(val)
 };
 
 var listSchema = mongoose.Schema({
-    'name'     : { 'type': String, 'default': 'Untitled', validate: validateString },
-    'created'  : { 'type': Date, 'default': Date.now },
-    'modified' : { 'type': Date, 'default': Date.now },
-    'hidden'   : { 'type': Boolean, 'default': false },
-    'task_ids' : [{ 'type': ObjectId, ref: 'TaskModel' }]
+    'name'      : { 'type': String, 'default': 'Untitled', validate: validateString },
+    'created'   : { 'type': Date, 'default': Date.now },
+    'modified'  : { 'type': Date, 'default': Date.now },
+    'is_hidden' : { 'type': Boolean, 'default': false },
+    'task_ids'  : [{ 'type': ObjectId, ref: 'TaskModel' }]
 });
 
 listSchema.virtual('id').get(function() {
@@ -29,12 +29,12 @@ listSchema.set('toJSON', {
 });
 
 var taskSchema = mongoose.Schema({
-    'text'      : { 'type': String, 'default': 'Untitled', validate: validateString },
-    'created'   : { 'type': Date, 'default': Date.now },
-    'modified'  : { 'type': Date, 'default': Date.now },
-    'completed' : { 'type': Boolean, 'default': false },
-    'hidden'    : { 'type': Boolean, 'default': false },
-    'list_ids'  : [{ 'type': ObjectId, ref: 'ListModel' }]
+    'text'        : { 'type': String, 'default': 'Untitled', validate: validateString },
+    'created'     : { 'type': Date, 'default': Date.now },
+    'modified'    : { 'type': Date, 'default': Date.now },
+    'is_complete' : { 'type': Boolean, 'default': false },
+    'is_hidden'   : { 'type': Boolean, 'default': false },
+    'list_ids'    : [{ 'type': ObjectId, ref: 'ListModel' }]
 });
 
 taskSchema.virtual('id').get(function() {
@@ -80,7 +80,7 @@ var onSuccess = function(res, data)
 
 exports.findLists = function(req, res)
 {
-    var query = { 'hidden': false };
+    var query = { 'is_hidden': false };
     if (Array.isArray(req.query.ids)) {
         query['_id'] = { $in: req.query.ids };
     }
@@ -94,7 +94,7 @@ exports.findList = function(req, res)
 {
     ListModel.find({ '_id': req.params.id }, function(err, list) {
         if (err) return onError(res, err);
-        TaskModel.find({ 'hidden': false, 'list_ids': { $in: [req.params.id] }}, function(err, tasks) {
+        TaskModel.find({ 'is_hidden': false, 'list_ids': { $in: [req.params.id] }}, function(err, tasks) {
             if (!err) {
                 onSuccess(res, { 'list': list[0], 'tasks': tasks });
             } else {
@@ -108,6 +108,15 @@ exports.addList = function(req, res)
 {
     var list = new ListModel(req.body.list);
     list.save(function(err) {
+        if (err) return onError(res, err);
+        onSuccess(res, { 'list': list });
+    });
+};
+
+var updateList = function(id, doc)
+{
+    doc.modified = new Date();
+    var list = ListModel.findByIdAndUpdate(req.params.id, doc, function(err, list) {
         if (err) return onError(res, err);
         onSuccess(res, { 'list': list });
     });
@@ -137,7 +146,7 @@ exports.deleteList = function(req, res)
 
 exports.findTasks = function(req, res)
 {
-    var query = { 'hidden': false };
+    var query = { 'is_hidden': false };
     if (Array.isArray(req.query.ids)) {
         query['_id'] = { $in: req.query.ids };
     }
@@ -151,7 +160,11 @@ exports.findTask = function(req, res)
 {
     TaskModel.find({ '_id': req.params.id }, function(err, task) {
         if (err) return onError(res, err);
-        ListModel.find({ 'hidden': false, '_id': { $in: task[0].list_ids }}, function(err, lists) {
+        if (!task.length || !task[0].list_ids) {
+            onSuccess(res, { 'task': task[0] });
+            return;
+        }
+        ListModel.find({ 'is_hidden': false, '_id': { $in: task[0].list_ids }}, function(err, lists) {
             if (!err) {
                 onSuccess(res, { 'task': task[0], 'lists': lists });
             } else {
@@ -174,12 +187,10 @@ exports.addTask = function(req, res)
     task.save(function(err) {
         if (err) return onError(res, err);
         if (init_list) {
-            var list = ListModel.findOne({ '_id': init_list }, function(err, list)
-            {
-                if (!err) {
-                    list.task_ids.push(task._id);
-                    list.save();
-                }
+            var list = ListModel.findOne({ '_id': init_list }, function(err, list) {
+                if (err) return;
+                list.task_ids.push(task._id);
+                list.save();
             });
         }
         onSuccess(res, { 'task': task });
@@ -198,9 +209,17 @@ exports.updateTask  = function(req, res)
 
 exports.deleteTask = function(req, res)
 {
-    TaskModel.remove({ '_id': req.params.id }, function(err) {
+    var task_id =req.params.id;
+    TaskModel.remove({ '_id': task_id }, function(err) {
         if (err) return onError(res, err);
-        onSuccess(res);
+        ListModel.find({ 'task_ids': { $in: [task_id] }}, function(err, lists) {
+            if (err || !lists.length) onSuccess(res, { 'task': null });
+            lists.forEach(function(list) {
+                list.task_ids.remove(task_id);
+                list.save();
+            });
+            onSuccess(res, { 'task': null });
+        });
     });
 };
 
