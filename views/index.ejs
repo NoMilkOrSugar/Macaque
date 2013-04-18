@@ -39,12 +39,12 @@
     <h3>Tasks:</h3>
     <ul>
     {{#each task in tasks}}
-
+        {{#unless task.hidden}}
         <li>
             {{view Ember.Checkbox checkedBinding="task.completed"}}
-            {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}{{isDeleted}}
+            {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
         </li>
-
+        {{/unless}}
     {{/each}}
     </ul>
     {{view Macaque.TaskCreateView}}

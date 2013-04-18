@@ -247,7 +247,6 @@ Macaque.TaskRoute = Ember.Route.extend({
             this.get('controller').removeTask(task, list);
 
             if (list) {
-                // why does this throw and error sometimes?
                 this.transitionTo('list', list);
             } else {
                 this.transitionTo('index');
@@ -260,14 +259,17 @@ Macaque.TaskController = Ember.ObjectController.extend({
 
     removeTask: function(task, list)
     {
-        task.one('didDelete', this, function() {
-            // list.get('tasks').removeObject(task);
-            // list.get('transaction').commit();
+        task.one('didDelete', this, function()
+        {
+            // force the list to update because our hasMany is borked
+            list.set('modified', new Date());
+            list.get('transaction').commit();
         });
-        task.set('text', '');
+        // hide from template until the task is deleted
+        task.set('hidden', true);
         task.deleteRecord();
-        this.get('store').commit();
-        // task.get('transaction').commit();
+        // this.get('store').commit();
+        task.get('transaction').commit();
     }
 
 });
