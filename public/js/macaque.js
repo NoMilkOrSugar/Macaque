@@ -64,9 +64,6 @@ DS.RESTAdapter.reopen({
     namespace: 'api'
 });
 
-
-// Macaque.Store.adapter.set('bulkCommit', true);
-
 // DS.RESTAdapter.map(Macaque.List, {
 //     tasks: { embedded: 'load' }
 // });
@@ -131,7 +128,24 @@ Macaque.IndexController = Ember.Controller.extend({
 
 Macaque.ListView = Ember.View.extend({
 
-    classNames: ['list-view']
+    classNames: ['list-view'],
+
+    click: function(e)
+    {
+        if ($(e.target).closest('#list-view-edit-button').length) {
+            $('#list-view-edit-field').focus();
+        }
+    },
+
+    keyDown: function(e)
+    {
+        console.log(e.keyCode);
+        if (e.target.id === 'list-view-edit-field') {
+            if ($.inArray(e.keyCode, [13, 27]) !== -1) {
+              this.get('controller').send('endEdit');
+            }
+        }
+    }
 
 });
 
@@ -157,6 +171,14 @@ Macaque.ListRoute = Ember.Route.extend({
         controller.set('content', model);
         controller.set('isEditing', false);
         controller.set('newTask', { text: '', 'list': model.id });
+    },
+
+    events: {
+
+        edit: function()
+        {
+            this.get('controller').startEdit();
+        }
     }
 });
 
@@ -164,12 +186,12 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     isEditing: false,
 
-    edit: function()
+    startEdit: function()
     {
         this.set('isEditing', true);
     },
 
-    save: function()
+    endEdit: function()
     {
         this.set('isEditing', false);
         this.get('store').commit();
@@ -225,7 +247,24 @@ Macaque.TaskCreateView = Ember.View.extend({
 
 Macaque.TaskView = Ember.View.extend({
 
-    classNames: ['task-view']
+    classNames: ['task-view'],
+
+    click: function(e)
+    {
+        if ($(e.target).closest('#task-view-edit-button').length) {
+            $('#task-view-edit-field').focus();
+        }
+    },
+
+    keyDown: function(e)
+    {
+        console.log(e.keyCode);
+        if (e.target.id === 'task-view-edit-field') {
+            if ($.inArray(e.keyCode, [13, 27]) !== -1) {
+              this.get('controller').send('endEdit');
+            }
+        }
+    }
 
 });
 
@@ -247,21 +286,37 @@ Macaque.TaskRoute = Ember.Route.extend({
     {
         // get breadcrumb history
         var previousList = this.controllerFor('application').get('previousList');
+
         if (previousList) {
             controller.set('previousList', previousList);
+
+            var tasks = previousList.get('tasks'),
+                index = tasks.indexOf(model),
+                count = tasks.get('length');
+
+            if (count > 0) {
+                controller.set('nextTask', tasks.objectAt( index < count - 1 ? index + 1 : 0));
+                controller.set('previousTask', tasks.objectAt( index > 0 ? index - 1 : count - 1 ));
+            }
         }
+
         controller.set('content', model);
         controller.set('isEditing', false);
     },
 
     events: {
+
+        edit: function()
+        {
+            this.get('controller').startEdit();
+        },
+
         remove: function()
         {
-            // var task = this.get('controller').get('model'),
             var task = this.currentModel,
                 list = task.get('lists').objectAt(0);
 
-            this.get('controller').removeTask(task, list);
+            this.get('controller').removeTask(task);
 
             if (list) {
                 this.transitionTo('list', list);
@@ -278,24 +333,38 @@ Macaque.TaskController = Ember.ObjectController.extend({
 
     isEditing: false,
 
-    edit: function()
+    startEdit: function()
     {
         this.set('isEditing', true);
     },
 
-    save: function()
+    endEdit: function()
     {
         this.set('isEditing', false);
         this.get('store').commit();
     },
 
-    removeTask: function(task, list)
+    removeTask: function(task)
     {
+        var lists = task.get('lists');
+
         task.one('didDelete', this, function()
         {
-            // force the list to update because our hasMany is borked
-            list.set('modified', new Date());
-            list.get('transaction').commit();
+            // force the parent lists to update because our hasMany is borked
+            lists.forEach(function(list) {
+                // // this is now done server-side
+                // list.set('modified', new Date());
+                // list.get('transaction').commit();
+                // list.one('didUpdate', function()
+                // {
+                    list.reload();
+
+                    // force the template view to update - why doesnt it?
+                    list.one('didReload', function() {
+                        list.set('tasks', list.get('tasks'));
+                    });
+                // });
+            });
         });
 
         // hide from template until the task is deleted
