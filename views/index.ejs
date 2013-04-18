@@ -4,36 +4,75 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="copyright" content="Copyright © David Bushell | @dbushell | http://dbushell.com/">
+
     <title><%= title %></title>
+
     <link rel="shortcut icon" href="/favicon.ico">
+    <!-- <link rel="stylesheet" href="css/normalize.css"> -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/bootstrap-responsive.min.css">
+    <link rel="stylesheet" href="/css/macaque.css">
 </head>
 <body>
 
 <script type="text/x-handlebars">
-    <h1>{{#linkTo 'index'}}<%= title %>{{/linkTo}}</h1>
 
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            {{#linkTo 'index' class="brand"}}<%= title %>{{/linkTo}}
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div class="row">
     {{outlet}}
+    </div>
 
-    <footer role="contentinfo">
-        <small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small>
-    </footer>
+    <div class="row">
+        <footer role="contentinfo">
+            <p><small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small></p>
+        </footer>
+    </div>
+
+</div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="index">
-    <h2>Lists:</h2>
-    <ul>
-    {{#each list in lists}}
-        <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
-    {{/each}}
+    <h2>All Lists</h2>
+    <ul class="breadcrumb">
+        <li class="active">All Lists</li>
     </ul>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Tasks</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{#each list in lists}}
+        <tr>
+            <td>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</td>
+            <td>{{list.taskCount}}</td>
+        </tr>
+        {{/each}}
+        </tbody>
+    </table>
 </script>
 
 <script type="text/x-handlebars" data-template-name="list">
+    <h2>{{name}}</h2>
+    <ul class="breadcrumb">
+        <li>{{#linkTo index}}All Lists{{/linkTo}} <span class="divider">/</span></li>
+        <li class="active">{{name}}</li>
+    </ul>
     {{#if isEditing }}
         {{partial 'list/edit'}}
         <button {{action save}}>Save List</button>
     {{else}}
-        <h2>List: {{name}}</h2>
         <button {{action edit}}>Edit List</button>
     {{/if}}
     <h3>Tasks:</h3>
@@ -61,12 +100,22 @@
 </script>
 
 <script type="text/x-handlebars" data-template-name="task">
+
+    <h2>{{view Ember.Checkbox checkedBinding="isComplete"}} {{text}}</h2>
+
+    <ul class="breadcrumb">
+        <li>{{#linkTo index}}All Lists{{/linkTo}} <span class="divider">/</span></li>
+    {{#if previousList}}
+        <li>{{#linkTo 'list' previousList}}{{previousList.name}}{{/linkTo}} <span class="divider">/</span></li>
+    {{/if}}
+        <li class="active">{{text}}</li>
+    </ul>
+
     {{#if isEditing }}
         {{partial 'task/edit'}}
         <button {{action save}}>Save Task</button>
         <button {{action remove}}>Delete Task</button>
     {{else}}
-        <h2>{{view Ember.Checkbox checkedBinding="isComplete"}} {{text}}</h2>
         <button {{action edit}}>Edit Task</button>
     {{/if}}
     <h3>Lists:</h3>
@@ -88,6 +137,7 @@
 <script src="/js/vendor/ember-data.js"></script>
 <script src="/js/vendor/moment.min.js"></script>
 <script src="/js/vendor/pikaday.min.js"></script>
+<script src="/js/vendor/bootstrap.min.js"></script>
 <script src="/js/macaque.js"></script>
 </body>
 </html>

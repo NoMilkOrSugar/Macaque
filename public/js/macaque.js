@@ -27,7 +27,13 @@ Macaque.List = DS.Model.extend({
     created  : DS.attr('date'),
     modified : DS.attr('date'),
     isHidden : DS.attr('boolean'),
-    tasks    : DS.hasMany('Macaque.Task')
+    tasks    : DS.hasMany('Macaque.Task'),
+
+    // computed properties not stored in database
+
+    taskCount: function() {
+        return this.get('tasks').get('length');
+    }.property('tasks')
 });
 
 Macaque.Task = DS.Model.extend({
@@ -92,6 +98,8 @@ Macaque.ApplicationRoute = Ember.Route.extend({
 
 Macaque.ApplicationController = Ember.Controller.extend({
 
+    previousList: null
+
 });
 
 /* ==========================================================================
@@ -107,8 +115,14 @@ Macaque.IndexRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
+        // reset breadcrumb history
+        this.controllerFor('application').set('previousList', null);
         controller.set('lists', model);
     }
+});
+
+Macaque.IndexController = Ember.Controller.extend({
+
 });
 
 /* ==========================================================================
@@ -137,6 +151,9 @@ Macaque.ListRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
+        // set breadcrumb history
+        this.controllerFor('application').set('previousList', model);
+
         controller.set('content', model);
         controller.set('isEditing', false);
         controller.set('newTask', { text: '', 'list': model.id });
@@ -228,13 +245,20 @@ Macaque.TaskRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
+        // get breadcrumb history
+        var previousList = this.controllerFor('application').get('previousList');
+        if (previousList) {
+            controller.set('previousList', previousList);
+        }
         controller.set('content', model);
+        controller.set('isEditing', false);
     },
 
     events: {
         remove: function()
         {
-            var task = this.get('controller').get('model'),
+            // var task = this.get('controller').get('model'),
+            var task = this.currentModel,
                 list = task.get('lists').objectAt(0);
 
             this.get('controller').removeTask(task, list);
@@ -249,6 +273,8 @@ Macaque.TaskRoute = Ember.Route.extend({
 });
 
 Macaque.TaskController = Ember.ObjectController.extend({
+
+    needs: 'application',
 
     isEditing: false,
 
