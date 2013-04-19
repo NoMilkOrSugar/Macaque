@@ -94,7 +94,8 @@ exports.findList = function(req, res)
 {
     ListModel.find({ '_id': req.params.id }, function(err, list) {
         if (err) return onError(res, err);
-        TaskModel.find({ 'is_hidden': false, 'list_ids': { $in: [req.params.id] }}, function(err, tasks) {
+        var query = { 'is_hidden': false, 'list_ids': { $in: [req.params.id] }};
+        TaskModel.find(query).sort({ is_complete: 1, modified: 'desc' }).exec(function(err, tasks) {
             if (!err) {
                 onSuccess(res, { 'list': list[0], 'tasks': tasks });
             } else {
@@ -134,9 +135,17 @@ exports.updateList  = function(req, res)
 
 exports.deleteList = function(req, res)
 {
-    ListModel.remove({ '_id': req.params.id }, function(err) {
+    var list_id = req.params.id;
+    ListModel.remove({ '_id': list_id }, function(err) {
         if (err) return onError(res, err);
-        onSuccess(res);
+        TaskModel.find({'list_ids': { $in: [list_id] }}, function(err, tasks) {
+            if (err || !tasks.length) onSuccess(res, { 'list': null });
+            tasks.forEach(function(task) {
+                task.list_ids.remove(list_id);
+                task.save();
+            });
+            onSuccess(res, { 'list': null });
+        });
     });
 };
 
@@ -150,7 +159,7 @@ exports.findTasks = function(req, res)
     if (Array.isArray(req.query.ids)) {
         query['_id'] = { $in: req.query.ids };
     }
-    TaskModel.find(query, function(err, tasks) {
+    TaskModel.find(query).sort({ is_complete: 1, modified: 'desc' }).exec(function(err, tasks) {
         if (err) return onError(res, err);
         onSuccess(res, { 'tasks': tasks });
     });

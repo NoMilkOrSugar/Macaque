@@ -21,6 +21,9 @@
     <div class="navbar-inner">
         <div class="container">
             {{#linkTo 'index' class="brand"}}<%= title %>{{/linkTo}}
+            <ul class="nav">
+              <li>{{#linkTo tasks}}All Tasks{{/linkTo}}</li>
+            </ul>
         </div>
     </div>
 </nav>
@@ -46,19 +49,34 @@
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Tasks</th>
+                <th class="text-right">Tasks</th>
+                <th class="text-right">Modified</th>
             </tr>
         </thead>
         <tbody>
         {{#each list in lists}}
+        {{#unless list.isHidden}}
         <tr>
             <td>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</td>
-            <td>{{list.taskCount}}</td>
+            <td class="text-right"><span class="badge">{{list.taskCount}}</span></td>
+            <td class="muted text-right">{{formattedDate list.modified}}</td>
         </tr>
+        {{/unless}}
         {{/each}}
         </tbody>
     </table>
 
+    {{view Macaque.ListCreateView}}
+
+</script>
+
+<script type="text/x-handlebars" data-template-name="list-create">
+<div class="well well-small">
+    <div class="input-append">
+        {{view Ember.TextField valueBinding="controller.newList.name" class="input-xxlarge" placeholder="New List…" id="list-create-text"}}
+        <button class="btn" id="list-create-button"><i class="icon-pencil"></i> Add Task</button>
+    </div>
+</div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="list">
@@ -69,6 +87,9 @@
         <span class="caret"></span>
         </button>
         <ul class="dropdown-menu">
+            <li>
+                <a href="#" {{action remove}}><i class="icon-remove"></i> Delete List</a>
+            </li>
         </ul>
     </div>
 
@@ -122,6 +143,32 @@
         <button class="btn" id="task-create-button"><i class="icon-pencil"></i> Add Task</button>
     </div>
 </div>
+</script>
+
+<script type="text/x-handlebars" data-template-name="tasks">
+
+<h2 class="view-title">All Tasks <span class="badge">{{taskCount}}</span></h2>
+
+<table class="table table-bordered table-striped list-view-tasks">
+    <thead>
+        <tr>
+            <th>Task</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{#each task in tasks}}
+        {{#unless task.isHidden}}
+        <tr>
+            <td>
+            {{view Ember.Checkbox checkedBinding="task.isComplete"}}
+            {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
+            </td>
+        </tr>
+        {{/unless}}
+    {{/each}}
+    </tbody>
+</table>
+
 </script>
 
 <script type="text/x-handlebars" data-template-name="task">
