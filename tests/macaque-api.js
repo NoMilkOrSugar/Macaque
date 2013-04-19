@@ -100,7 +100,7 @@ describe('Macaque API', function()
                 macaqueAPI('/api/lists/' + json.list.id, function(data)
                 {
                     json = JSON.parse(data);
-                    assert.equal(true, json.success);
+                    assert.equal(true, json.list === null);
                     done();
                 }, 'DELETE');
             }, 'POST', { 'list': { 'name': name } });
@@ -123,7 +123,7 @@ describe('Macaque API', function()
                     macaqueAPI('/api/lists/' + list.id, function(data)
                     {
                         json = JSON.parse(data);
-                        assert.equal(true, json.success);
+                        assert.equal(true, json.list === null);
                         done();
                     }, 'DELETE');
                 }, 'PUT', { 'list': { 'name': name + '_edit' } });

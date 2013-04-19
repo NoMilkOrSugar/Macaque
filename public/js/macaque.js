@@ -7,6 +7,10 @@ Ember.Handlebars.registerBoundHelper('fromNow', function(date) {
     return moment(date).fromNow();
 });
 
+Ember.Handlebars.registerBoundHelper('formattedDate', function(date) {
+    return moment(date).format('h:mma - D MMM YYYY');
+});
+
 Macaque = Ember.Application.create({
     LOG_TRANSITIONS: true
 });
@@ -76,6 +80,8 @@ Macaque.Router.map(function()
         // this.route('edit', { path: '/edit' });
     });
 
+    this.route('tasks', { path: '/tasks' });
+
     this.resource('task', { path: '/task/:id'}, function() {
         // this.route('edit', { path: '/edit' });
     });
@@ -114,12 +120,52 @@ Macaque.IndexRoute = Ember.Route.extend({
     {
         // reset breadcrumb history
         this.controllerFor('application').set('previousList', null);
+        controller.set('newList', { name: '' });
         controller.set('lists', model);
     }
 });
 
 Macaque.IndexController = Ember.Controller.extend({
 
+    createList: function()
+    {
+        var list = Macaque.List.createRecord(this.get('newList'));
+
+        list.set('created', new Date());
+        list.set('modified', new Date());
+        list.set('isHidden', true);
+
+        list.addObserver('id', function(task)
+        {
+            setTimeout(function() {
+                list.set('isHidden', false);
+                list.get('transaction').commit();
+            }, 1);
+        });
+
+        list.get('transaction').commit();
+
+        this.set('newList', { name: '' });
+    }
+
+});
+
+Macaque.ListCreateView = Ember.View.extend({
+
+    templateName: 'list-create',
+
+    classNames: ['list-create-view'],
+
+    click: function(e)
+    {
+        if (e.target.id === 'list-create-button') {
+            field = document.getElementById('list-create-text');
+            if (!field.value || /^\s*$/.test(field.value)) {
+                return;
+            }
+            this.get('controller').send('createList');
+        }
+    }
 });
 
 /* ==========================================================================
@@ -139,7 +185,6 @@ Macaque.ListView = Ember.View.extend({
 
     keyDown: function(e)
     {
-        console.log(e.keyCode);
         if (e.target.id === 'list-view-edit-field') {
             if ($.inArray(e.keyCode, [13, 27]) !== -1) {
               this.get('controller').send('endEdit');
@@ -178,6 +223,12 @@ Macaque.ListRoute = Ember.Route.extend({
         edit: function()
         {
             this.get('controller').startEdit();
+        },
+
+        remove: function()
+        {
+            this.get('controller').removeList(this.currentModel);
+            this.transitionTo('index');
         }
     }
 });
@@ -197,7 +248,7 @@ Macaque.ListController = Ember.ObjectController.extend({
         this.get('store').commit();
     },
 
-    create: function()
+    createTask: function()
     {
         var list = Macaque.List.find(this.get('content').id),
             task = Macaque.Task.createRecord(this.get('newTask'));
@@ -220,6 +271,17 @@ Macaque.ListController = Ember.ObjectController.extend({
         task.get('transaction').commit();
 
         this.set('newTask', { text: '', 'list': list.id });
+    },
+
+    removeList: function(list)
+    {
+        list.one('didDelete', this, function()
+        {
+            // API derefences any tasks
+        });
+        list.set('isHidden', true);
+        list.deleteRecord();
+        list.get('transaction').commit();
     }
 });
 
@@ -236,9 +298,34 @@ Macaque.TaskCreateView = Ember.View.extend({
             if (!field.value || /^\s*$/.test(field.value)) {
                 return;
             }
-            this.get('controller').send('create');
+            this.get('controller').send('createTask');
         }
     }
+});
+
+/* ==========================================================================
+   Tasks (all)
+   ========================================================================== */
+
+Macaque.TasksRoute = Ember.Route.extend({
+
+    model: function(params)
+    {
+        return Macaque.Task.find();
+    },
+
+    setupController: function(controller, model)
+    {
+        controller.set('tasks', model);
+    }
+});
+
+Macaque.TasksController = Ember.Controller.extend({
+
+    taskCount: function() {
+        return this.get('tasks').get('length');
+    }.property('tasks.@each')
+
 });
 
 /* ==========================================================================
@@ -258,7 +345,6 @@ Macaque.TaskView = Ember.View.extend({
 
     keyDown: function(e)
     {
-        console.log(e.keyCode);
         if (e.target.id === 'task-view-edit-field') {
             if ($.inArray(e.keyCode, [13, 27]) !== -1) {
               this.get('controller').send('endEdit');
