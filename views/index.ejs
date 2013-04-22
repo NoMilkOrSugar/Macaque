@@ -153,6 +153,7 @@
     <thead>
         <tr>
             <th>Task</th>
+            <th class="text-right">Modified</th>
         </tr>
     </thead>
     <tbody>
@@ -163,6 +164,7 @@
             {{view Ember.Checkbox checkedBinding="task.isComplete"}}
             {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
             </td>
+            <td class="muted text-right">{{formattedDate task.modified}}</td>
         </tr>
         {{/unless}}
     {{/each}}
@@ -233,7 +235,7 @@
 
 <script src="/js/vendor/jquery-1.9.1.min.js"></script>
 <script src="/js/vendor/handlebars-1.0.0-rc.3.min.js"></script>
-<script src="/js/vendor/ember-1.0.0-rc.2.js"></script>
+<script src="/js/vendor/ember-1.0.0-rc.3.js"></script>
 <script src="/js/vendor/ember-data.js"></script>
 <script src="/js/vendor/moment.min.js"></script>
 <script src="/js/vendor/pikaday.min.js"></script>

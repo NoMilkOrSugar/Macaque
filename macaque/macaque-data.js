@@ -95,7 +95,7 @@ exports.findList = function(req, res)
     ListModel.find({ '_id': req.params.id }, function(err, list) {
         if (err) return onError(res, err);
         var query = { 'is_hidden': false, 'list_ids': { $in: [req.params.id] }};
-        TaskModel.find(query).sort({ is_complete: 1, modified: 'desc' }).exec(function(err, tasks) {
+        TaskModel.find(query, function(err, tasks) {
             if (!err) {
                 onSuccess(res, { 'list': list[0], 'tasks': tasks });
             } else {
@@ -159,7 +159,7 @@ exports.findTasks = function(req, res)
     if (Array.isArray(req.query.ids)) {
         query['_id'] = { $in: req.query.ids };
     }
-    TaskModel.find(query).sort({ is_complete: 1, modified: 'desc' }).exec(function(err, tasks) {
+    TaskModel.find(query, function(err, tasks) {
         if (err) return onError(res, err);
         onSuccess(res, { 'tasks': tasks });
     });

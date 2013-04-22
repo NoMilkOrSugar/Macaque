@@ -68,9 +68,38 @@ DS.RESTAdapter.reopen({
     namespace: 'api'
 });
 
-// DS.RESTAdapter.map(Macaque.List, {
-//     tasks: { embedded: 'load' }
-// });
+// extend Ember.SortableMixin to allow `sortAscending` value per property
+// https://github.com/emberjs/ember.js/blob/master/packages/ember-runtime/lib/mixins/sortable.js
+Macaque.SortableMixin = Ember.Mixin.create(Ember.SortableMixin, {
+
+    sortProperties: null,
+
+    sortAscending: [true],
+
+    orderBy: function(item1, item2)
+    {
+        var result = 0,
+            sortProperties = Ember.get(this, 'sortProperties'),
+            sortAscending = Ember.get(this, 'sortAscending');
+
+        Ember.assert("you need to define `sortProperties`", !!sortProperties);
+
+        Ember.EnumerableUtils.forEach(sortProperties, function(propertyName, i)
+            {
+                if (result === 0) {
+                    result = Ember.compare(Ember.get(item1, propertyName), Ember.get(item2, propertyName));
+                if ((result !== 0) && !sortAscending[i]) {
+                    result = (-1) * result;
+                }
+            }
+        });
+        return result;
+    }
+});
+
+/* ==========================================================================
+   Macaque Router
+   ========================================================================== */
 
 Macaque.Router.map(function()
 {
@@ -88,7 +117,7 @@ Macaque.Router.map(function()
 });
 
 /* ==========================================================================
-   Application
+   Macaque Application
    ========================================================================== */
 
 Macaque.ApplicationRoute = Ember.Route.extend({
@@ -106,7 +135,7 @@ Macaque.ApplicationController = Ember.Controller.extend({
 });
 
 /* ==========================================================================
-   Index
+   Macaque Index
    ========================================================================== */
 
 Macaque.IndexRoute = Ember.Route.extend({
@@ -121,11 +150,19 @@ Macaque.IndexRoute = Ember.Route.extend({
         // reset breadcrumb history
         this.controllerFor('application').set('previousList', null);
         controller.set('newList', { name: '' });
-        controller.set('lists', model);
+        controller.set('content', model);
     }
 });
 
 Macaque.IndexController = Ember.Controller.extend({
+
+    lists: (function() {
+        return Ember.ArrayProxy.createWithMixins(Ember.SortableMixin, {
+            sortAscending: false,
+            sortProperties: ['modified'],
+            content: this.get('content')
+        });
+    }).property('content'),
 
     createList: function()
     {
@@ -169,7 +206,7 @@ Macaque.ListCreateView = Ember.View.extend({
 });
 
 /* ==========================================================================
-   List
+   Macaque List
    ========================================================================== */
 
 Macaque.ListView = Ember.View.extend({
@@ -236,6 +273,14 @@ Macaque.ListRoute = Ember.Route.extend({
 Macaque.ListController = Ember.ObjectController.extend({
 
     isEditing: false,
+
+    tasks: (function() {
+        return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
+            sortAscending: [true, false],
+            sortProperties: ['isComplete', 'modified'],
+            content: this.get('content.tasks')
+        });
+    }).property('content.tasks'),
 
     startEdit: function()
     {
@@ -304,7 +349,7 @@ Macaque.TaskCreateView = Ember.View.extend({
 });
 
 /* ==========================================================================
-   Tasks (all)
+   Macaque Tasks (all)
    ========================================================================== */
 
 Macaque.TasksRoute = Ember.Route.extend({
@@ -316,11 +361,21 @@ Macaque.TasksRoute = Ember.Route.extend({
 
     setupController: function(controller, model)
     {
-        controller.set('tasks', model);
+        controller.set('content', model);
     }
 });
 
 Macaque.TasksController = Ember.Controller.extend({
+
+
+    tasks: (function() {
+
+        return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
+            sortAscending: [true, false],
+            sortProperties: ['isComplete', 'modified'],
+            content: this.get('content')
+        });
+    }).property('content'),
 
     taskCount: function() {
         return this.get('tasks').get('length');
@@ -329,7 +384,7 @@ Macaque.TasksController = Ember.Controller.extend({
 });
 
 /* ==========================================================================
-   Task
+   Macaque Task
    ========================================================================== */
 
 Macaque.TaskView = Ember.View.extend({
