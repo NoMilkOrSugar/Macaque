@@ -74,7 +74,7 @@
 <div class="well well-small">
     <div class="input-append">
         {{view Ember.TextField valueBinding="controller.newList.name" class="input-xxlarge" placeholder="New List…" id="list-create-text"}}
-        <button class="btn" id="list-create-button"><i class="icon-pencil"></i> Add Task</button>
+        <button class="btn" id="list-create-button"><i class="icon-pencil"></i> Add List</button>
     </div>
 </div>
 </script>
@@ -175,7 +175,6 @@
 
 <script type="text/x-handlebars" data-template-name="task">
 
-
     <div class="btn-group pull-right task-view-actions">
         <button {{action edit}} class="btn" id="task-view-edit-button"><i class="icon-edit"></i> Edit Task</button>
         <button class="btn dropdown-toggle" data-toggle="dropdown">
@@ -238,7 +237,6 @@
 <script src="/js/vendor/ember-1.0.0-rc.3.js"></script>
 <script src="/js/vendor/ember-data.js"></script>
 <script src="/js/vendor/moment.min.js"></script>
-<script src="/js/vendor/pikaday.min.js"></script>
 <script src="/js/vendor/bootstrap.min.js"></script>
 <script src="/js/macaque.js"></script>
 </body>
