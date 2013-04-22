@@ -15,6 +15,13 @@ app.set('port', 3000);
 app.set('title', 'Macaque');
 app.set('version', 'v0.0.1');
 
+app.set('mongodb url', 'mongodb://localhost:27017/');
+app.set('mongodb name', 'macaque');
+
+// auto export/import MongoDB data
+app.set('backup dir', '.macaque/');
+app.set('backup limit', 10);
+
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 
@@ -54,6 +61,16 @@ app.get('/api', function(req, res)
     });
 });
 
+// export and import
+app.get('/api/import/fixtures', function(req, res)
+{
+    data.resetFixtures();
+    res.send({ 'success': true });
+});
+app.get('/api/import/backup', function(req, res) { data.importBackup(app, req, res); });
+app.get('/api/export/backup', function(req, res) { data.exportBackup(app, req, res); });
+app.get('/api/export', data.exportJSON);
+
 // list API paths
 app.get('/api/lists',        data.findLists);
 app.get('/api/lists/:id',    data.findList);
@@ -82,15 +99,21 @@ app.get('/*', function(req, res)
 });
 
 // open MongoDB
-data.openDb('macaque');
+data.openDb(app.get('mongodb url'), app.get('mongodb name'));
 
-// load test data
-data.resetFixtures();
+var args = process.argv.splice(2);
+
+// import data from backup
+if (args.indexOf('--backup') !== -1) {
+    if (app.get('backup dir')) {
+        data.importBackup(app);
+    }
+}
 
 http.createServer(app).listen(app.get('port'), function()
 {
     console.log(app.get('title') + ' listening on port ' + app.get('port'));
 
     // run Mocha tests for Macaque API
-    require('child_process').spawn('./node_modules/.bin/mocha', ['--reporter', 'Spec', './tests/macaque-api.js'], { stdio: 'inherit' });
+    // require('child_process').spawn('./node_modules/.bin/mocha', ['--reporter', 'Spec', './tests/macaque-api.js'], { stdio: 'inherit' });
 });

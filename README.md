@@ -3,33 +3,27 @@ Macaque
 
 ### A to-do or list app made with [Node](http://nodejs.org/) and [Ember](http://emberjs.com/)
 
-This is a learning experiment so don't expect anything good right away... or ever.
+This is a learning experiment so don't expect anything good right away!
 
 ![Macaque Screenshot](https://raw.github.com/dbushell/Macaque/master/public/img/screenshot.png)
 
-## To-do
+## Running Macaque
 
-* move this to-do into a working version of Macaque
-* spend the next month illustrating a mascot
-* get coding
+Macaque requires [Node](http://nodejs.org/) and [MongoDB](http://www.mongodb.org/).
 
-## Done
+* run `npm install`
+* install and run `mongod` (if not already running)
+* configure options in `app.js` and run `node app`
+* visit: `http://localhost:3000/`
+* Macaque!
 
-* add task pagination
-* add list breadcrumb
-* add Twitter Bootstrap
-* add task deletion
-* update Ember templates
-* update API and use Ember Data
-* add Mocha tests for tasks
-* add Mongoose and schema
-* start Mocha tests for API
-* start real API with MongoDB
-* add category and task routes
-* add fake JSON API for test data
-* set up public assets and Ember app
-* set up Node package and Express app
-* put it on GitHub
+## Loading Data
+
+*Macaque* can export and backup data as JSON via the API or to disk (in the directory `.macaque/` by default).
+
+To load the most recent backup launch with `node app --backup`. The backup files in this repository include the development to-do lits — Macaque is now self-aware!
+
+To load test data visit: `http://localhost:3000/api/import/fixtures`.
 
 * * *
 

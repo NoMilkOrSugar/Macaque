@@ -21,8 +21,23 @@ Macaque.Router.reopen({ location: 'history' });
 Macaque.Store = DS.Store.extend({
     revision: 12,
     adapter: DS.RESTAdapter.extend({
-        url: 'http://localhost:3000'
-        // bulkCommit: true
+
+        url: 'http://localhost:3000',
+
+        serializer: DS.RESTSerializer.extend({
+
+            // the default Ember Serializer converts IDs to numbers meaning all-numeric
+            // MongoDB IDs are serialized in the URL like `5.1755256517945e`
+
+            // https://github.com/emberjs/data/blob/master/packages/ember-data/lib/system/serializer.js
+            // serializeId: function(id) {
+            //     if (isNaN(id)) { return id; }
+            //     return +id;
+            // }
+            serializeId: function(id) {
+                return id.toString();
+            }
+        })
     })
 });
 
@@ -103,7 +118,7 @@ Macaque.SortableMixin = Ember.Mixin.create(Ember.SortableMixin, {
 
 Macaque.Router.map(function()
 {
-    // this.route('about', { path: '/about' });
+    this.route('settings', { path: '/settings' });
 
     this.resource('list', { path: '/list/:id' }, function() {
         // this.route('edit', { path: '/edit' });
@@ -132,6 +147,57 @@ Macaque.ApplicationController = Ember.Controller.extend({
 
     previousList: null
 
+});
+
+/* ==========================================================================
+   Macaque Settings
+   ========================================================================== */
+
+Macaque.SettingsRoute = Ember.Route.extend({
+
+    setupController: function(controller)
+    {
+        controller.set('isSaving', false);
+        controller.set('hasSuccess', false);
+        controller.set('hasFailure', false);
+    }
+
+});
+
+Macaque.SettingsController = Ember.Controller.extend({
+
+    isSaving: false,
+
+    hasSuccess: false,
+
+    hasFailure: false,
+
+    backup: function()
+    {
+        var controller = this;
+        if (controller.get('isSaving')) return;
+        controller.set('isSaving', true);
+
+        var onFail = function(err)
+        {
+            controller.set('hasSuccess', false);
+            controller.set('hasFailure', true);
+        };
+
+        $.getJSON('/api/export/backup').done(function(json)
+        {
+            if (json && json.success) {
+                controller.set('hasSuccess', true);
+                controller.set('hasFailure', false);
+            } else {
+                onFail();
+            }
+
+        }).fail(onFail).always(function()
+        {
+            controller.set('isSaving', false);
+        });
+    }
 });
 
 /* ==========================================================================
@@ -366,7 +432,6 @@ Macaque.TasksRoute = Ember.Route.extend({
 });
 
 Macaque.TasksController = Ember.Controller.extend({
-
 
     tasks: (function() {
 

@@ -21,6 +21,11 @@ h2 .badge {
     vertical-align: 4px;
 }
 
+p.muted code {
+    color: #999;
+}
+
+.well p:last-child,
 .well .nav:last-child,
 .well .input-append:last-child {
     margin-bottom: 0;
@@ -89,4 +94,8 @@ td.text-right {
 .view-title input[type="checkbox"]:before {
     width: 30px;
     height: 30px;
+}
+
+.list-view-tasks td.is-complete a {
+    color: #999;
 }

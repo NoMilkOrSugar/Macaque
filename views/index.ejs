@@ -22,7 +22,8 @@
         <div class="container">
             {{#linkTo 'index' class="brand"}}<%= title %>{{/linkTo}}
             <ul class="nav">
-              <li>{{#linkTo tasks}}All Tasks{{/linkTo}}</li>
+                <li>{{ routeName }}{{#linkTo tasks}}All Tasks{{/linkTo}}</li>
+                <li>{{#linkTo settings}}Settings{{/linkTo}}</li>
             </ul>
         </div>
     </div>
@@ -33,14 +34,14 @@
     {{outlet}}
 
     <footer role="contentinfo">
-        <p><small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small></p>
+        <hr>
+        <p class="muted"><small><a href="https://github.com/dbushell/Macaque" target="_blank"><%= title %></a> | Copyright © <a href="http://dbushell.com/" target="_blank">David Bushell</a></small></p>
     </footer>
 
 </div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="index">
-
     <h2 class="view-title">All Lists</h2>
     <ul class="breadcrumb">
         <li class="active">All Lists</li>
@@ -67,7 +68,6 @@
     </table>
 
     {{view Macaque.ListCreateView}}
-
 </script>
 
 <script type="text/x-handlebars" data-template-name="list-create">
@@ -76,6 +76,38 @@
         {{view Ember.TextField valueBinding="controller.newList.name" class="input-xxlarge" placeholder="New List…" id="list-create-text"}}
         <button class="btn" id="list-create-button"><i class="icon-pencil"></i> Add List</button>
     </div>
+</div>
+</script>
+
+<script type="text/x-handlebars" data-template-name="settings">
+<h2 class="view-title">Settings</h2>
+<hr>
+<h3>Backups</h3>
+{{#if hasSuccess }}
+{{partial 'settings/success'}}
+{{/if}}
+{{#if hasFailure }}
+{{partial 'settings/error'}}
+{{/if}}
+<div class="well">
+    <p>When starting <strong><%= title %></strong> run <code>node app --backup</code> to load the most recent backup into the database.</p>
+    <p>
+        <button class="btn btn-large" {{action backup}}><i class="icon-download-alt"></i> Save Backup</button>
+        <a class="btn btn-link" href="/api/export" target="_new">(Download JSON)</a>
+    </p>
+    <p class="muted">By default backups are saved to <code>.macaque</code></p>
+</div>
+</script>
+
+<script type="text/x-handlebars" data-template-name="settings/_error">
+<div class="alert alert-error">
+    <strong>Error!</strong> failed to save backup.
+</div>
+</script>
+
+<script type="text/x-handlebars" data-template-name="settings/_success">
+<div class="alert alert-success">
+    <strong>Success!</strong> backup saved to disk.
 </div>
 </script>
 
@@ -116,9 +148,10 @@
         {{#each task in tasks}}
             {{#unless task.isHidden}}
             <tr>
-                <td>
-                {{view Ember.Checkbox checkedBinding="task.isComplete"}}
-                {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}</td>
+                <td {{bindAttr class="task.isComplete"}}>
+                    {{view Ember.Checkbox checkedBinding="task.isComplete"}}
+                    {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
+                </td>
             </tr>
             {{/unless}}
         {{/each}}
@@ -160,7 +193,7 @@
     {{#each task in tasks}}
         {{#unless task.isHidden}}
         <tr>
-            <td>
+            <td {{bindAttr class="task.isComplete"}}>
             {{view Ember.Checkbox checkedBinding="task.isComplete"}}
             {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
             </td>

@@ -3,7 +3,7 @@
  * Copyright (c) David Bushell | @dbushell | http://dbushell.com/
  */
 
-var mongo = require('mongodb'),
+var fs = require('fs'),
     mongoose = require('mongoose'),
     ObjectId = mongoose.Schema.Types.ObjectId;
 
@@ -50,9 +50,9 @@ var TaskModel = mongoose.model('TaskModel', taskSchema);
 
 var db;
 
-exports.openDb = function(name)
+exports.openDb = function(path, name)
 {
-    mongoose.connect('mongodb://localhost:27017/' + name);
+    mongoose.connect(path + name);
     db = mongoose.connection;
     db.once('open', function()
     {
@@ -62,16 +62,117 @@ exports.openDb = function(name)
 
 var onError = function(res, err)
 {
-    res.send({ 'error': err.message });
+    if (res) res.send({ 'error': err.message });
 };
 
 var onSuccess = function(res, data)
 {
+    if (!res) return;
+
     if (data) {
         res.send(data);
     } else {
         res.send({ 'success': true });
     }
+};
+
+/* ==========================================================================
+   Export / Import Data
+   ========================================================================== */
+
+function getData(callback)
+{
+    ListModel.find({}, function(err, lists) {
+        if (err) return callback(null);
+        TaskModel.find({}, function(err, tasks) {
+            if (err) return callback(null);
+            return callback({ 'lists': lists, 'tasks': tasks });
+        });
+    });
+}
+
+function getBackups(dir)
+{
+    var ret = [], files = fs.readdirSync(dir);
+    if (Array.isArray(files)) {
+        files = files.sort(function(a, b) {
+            return fs.statSync(dir + a).mtime.getTime() - fs.statSync(dir + b).mtime.getTime();
+        });
+        files.forEach(function(file) {
+            if (/^\.macaque-/.test(file)) {
+                ret.push(file);
+            }
+        });
+    }
+    return ret;
+}
+
+exports.exportJSON = function(req, res)
+{
+    getData(function(data) {
+        if (!data) return onError(res, new Error('export failed'));
+        onSuccess(res, data);
+    });
+};
+
+exports.exportBackup = function(app, req, res)
+{
+    getData(function(data)
+    {
+        var dir = app.get('backup dir');
+
+        if (!dir) return onError(res, new Error('no backup directory configured'));
+        if (!data) return onError(res, new Error('no backup data exported'));
+
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+        }
+        fs.open(dir + '/.macaque-' + new Date().getTime(), 'w', function(err, fd)
+        {
+            if (err) return callback(err);
+
+            buffer = new Buffer(JSON.stringify(data));
+            fs.writeSync(fd, buffer, 0, buffer.length);
+
+            onSuccess(res);
+
+            var count = 0, files = getBackups(dir);
+            files.reverse().forEach(function(file) {
+                if (++count > (parseInt(app.get('backup limit'), 10) || 10)) {
+                    if (fs.existsSync(dir + file)) fs.unlinkSync(dir + file);
+                }
+            });
+        });
+    });
+};
+
+exports.importBackup = function(app, req, res)
+{
+    var json, file, dir = app.get('backup dir');
+    if (!dir) return onError(res, new Error('no backup directory configured'));
+
+    file = getBackups(dir).pop();
+    if (!file) return onError(res, new Error('no backup files found'));
+
+    fs.readFile(dir + file, 'utf8', function (err, data)
+    {
+        if (err) return onError(res, err);
+        try { json = JSON.parse(data); }
+        catch(e) { return onError(res, e); }
+
+        ListModel.remove({}).exec();
+        TaskModel.remove({}).exec();
+
+        if (Array.isArray(json.lists)) {
+            json.lists.forEach(function(list) { new ListModel(list).save(); });
+        }
+
+        if (Array.isArray(json.tasks)) {
+            json.tasks.forEach(function(task) { new TaskModel(task).save(); });
+        }
+
+        onSuccess(res);
+    });
 };
 
 /* ==========================================================================
@@ -238,13 +339,8 @@ exports.deleteTask = function(req, res)
 
 exports.resetFixtures = function()
 {
-    TaskModel.find({}, function(err, docs) {
-        if (!err) docs.forEach(function(doc) { doc.remove(); });
-    });
-
-    ListModel.find({}, function(err, docs) {
-        if (!err) docs.forEach(function(doc) { doc.remove(); });
-    });
+    TaskModel.remove({}).exec();
+    ListModel.remove({}).exec();
 
     var docs = [
         { name: 'Primates' },
@@ -293,8 +389,6 @@ exports.resetFixtures = function()
                     });
                 });
             });
-
-            if (!err) console.log('Fixtures loaded');
         });
     });
 };
