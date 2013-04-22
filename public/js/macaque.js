@@ -19,10 +19,14 @@ Macaque = Ember.Application.create({
 Macaque.Router.reopen({ location: 'history' });
 
 Macaque.Store = DS.Store.extend({
+
     revision: 12,
+
     adapter: DS.RESTAdapter.extend({
 
         url: 'http://localhost:3000',
+
+        namespace: 'api',
 
         serializer: DS.RESTSerializer.extend({
 
@@ -72,15 +76,6 @@ Macaque.Task = DS.Model.extend({
             this.get('store').commit();
         });
     }.observes('isComplete')
-});
-
-DS.RESTAdapter.configure('plurals', {
-    list: 'lists',
-    task: 'tasks'
-});
-
-DS.RESTAdapter.reopen({
-    namespace: 'api'
 });
 
 // extend Ember.SortableMixin to allow `sortAscending` value per property
@@ -215,6 +210,7 @@ Macaque.IndexRoute = Ember.Route.extend({
     {
         // reset breadcrumb history
         this.controllerFor('application').set('previousList', null);
+
         controller.set('newList', { name: '' });
         controller.set('content', model);
     }
@@ -222,13 +218,13 @@ Macaque.IndexRoute = Ember.Route.extend({
 
 Macaque.IndexController = Ember.Controller.extend({
 
-    lists: (function() {
+    lists: function() {
         return Ember.ArrayProxy.createWithMixins(Ember.SortableMixin, {
             sortAscending: false,
             sortProperties: ['modified'],
             content: this.get('content')
         });
-    }).property('content'),
+    }.property('content'),
 
     createList: function()
     {
@@ -340,13 +336,13 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     isEditing: false,
 
-    tasks: (function() {
+    tasks: function() {
         return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
             sortAscending: [true, false],
             sortProperties: ['isComplete', 'modified'],
             content: this.get('content.tasks')
         });
-    }).property('content.tasks'),
+    }.property('content.tasks'),
 
     startEdit: function()
     {
@@ -386,10 +382,6 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     removeList: function(list)
     {
-        list.one('didDelete', this, function()
-        {
-            // API derefences any tasks
-        });
         list.set('isHidden', true);
         list.deleteRecord();
         list.get('transaction').commit();
@@ -433,14 +425,13 @@ Macaque.TasksRoute = Ember.Route.extend({
 
 Macaque.TasksController = Ember.Controller.extend({
 
-    tasks: (function() {
-
+    tasks: function() {
         return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
             sortAscending: [true, false],
             sortProperties: ['isComplete', 'modified'],
             content: this.get('content')
         });
-    }).property('content'),
+    }.property('content'),
 
     taskCount: function() {
         return this.get('tasks').get('length');
@@ -558,18 +549,11 @@ Macaque.TaskController = Ember.ObjectController.extend({
         {
             // force the parent lists to update because our hasMany is borked
             lists.forEach(function(list) {
-                // // this is now done server-side
-                // list.set('modified', new Date());
-                // list.get('transaction').commit();
-                // list.one('didUpdate', function()
-                // {
-                    list.reload();
-
-                    // force the template view to update - why doesnt it?
-                    list.one('didReload', function() {
-                        list.set('tasks', list.get('tasks'));
-                    });
-                // });
+                list.reload();
+                // force the template view to update - why doesnt it?
+                list.one('didReload', function() {
+                    list.set('tasks', list.get('tasks'));
+                });
             });
         });
 
@@ -579,5 +563,4 @@ Macaque.TaskController = Ember.ObjectController.extend({
         // this.get('store').commit();
         task.get('transaction').commit();
     }
-
 });
