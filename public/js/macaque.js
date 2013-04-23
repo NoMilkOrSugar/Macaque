@@ -370,8 +370,14 @@ Macaque.ListController = Ember.ObjectController.extend({
         task.addObserver('id', function(task)
         {
             setTimeout(function() {
-                list.get('tasks').pushObject(Macaque.Task.find(task.id));
-                list.get('transaction').commit();
+                list.reload();
+                // force the template view to update - why doesnt it?
+                list.one('didReload', function() {
+                    list.set('tasks', list.get('tasks'));
+                });
+                // // this method didn't update the task count
+                // list.get('tasks').pushObject(Macaque.Task.find(task.id));
+                // list.get('transaction').commit();
             }, 1);
         });
 
