@@ -59,7 +59,7 @@
         {{#unless list.isHidden}}
         <tr>
             <td>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</td>
-            <td class="text-right"><span class="badge">{{list.taskCount}}</span></td>
+            <td class="text-right"><span class="badge">{{list.openTaskCount}}</span></td>
             <td class="muted text-right">{{formattedDate list.modified}}</td>
         </tr>
         {{/unless}}
@@ -128,7 +128,7 @@
     {{#if isEditing }}
         {{partial 'list/edit'}}
     {{else}}
-        <h2 class="view-title">{{name}} <span class="badge">{{taskCount}}</span></h2>
+        <h2 class="view-title">{{name}} <span class="badge">{{openTaskCount}}</span></h2>
     {{/if }}
 
     <ul class="breadcrumb">
@@ -180,7 +180,7 @@
 
 <script type="text/x-handlebars" data-template-name="tasks">
 
-<h2 class="view-title">All Tasks <span class="badge">{{taskCount}}</span></h2>
+<h2 class="view-title">All Tasks <span class="badge">{{openTaskCount}}</span></h2>
 
 <table class="table table-bordered table-striped list-view-tasks">
     <thead>

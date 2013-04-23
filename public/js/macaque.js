@@ -56,7 +56,11 @@ Macaque.List = DS.Model.extend({
 
     taskCount: function() {
         return this.get('tasks').get('length');
-    }.property('tasks')
+    }.property('tasks'),
+
+    openTaskCount: function() {
+        return this.get('tasks').filterProperty('isComplete', false).get('length');
+    }.property('tasks.@each.isComplete')
 });
 
 Macaque.Task = DS.Model.extend({
@@ -452,10 +456,9 @@ Macaque.TasksController = Ember.Controller.extend({
         });
     }.property('content'),
 
-    taskCount: function() {
-        return this.get('tasks').get('length');
-    }.property('tasks.@each')
-
+    openTaskCount: function() {
+        return this.get('tasks').filterProperty('isComplete', false).get('length');
+    }.property('tasks.@each.isComplete')
 });
 
 /* ==========================================================================
