@@ -264,6 +264,13 @@ Macaque.ListCreateView = Ember.View.extend({
             }
             this.get('controller').send('createList');
         }
+    },
+
+    keyDown: function(e)
+    {
+        if (e.target.id === 'list-create-text' && e.keyCode === 13) {
+            this.get('controller').send('createList');
+        }
     }
 });
 
@@ -290,7 +297,6 @@ Macaque.ListView = Ember.View.extend({
             }
         }
     }
-
 });
 
 Macaque.ListRoute = Ember.Route.extend({
@@ -407,6 +413,13 @@ Macaque.TaskCreateView = Ember.View.extend({
             if (!field.value || /^\s*$/.test(field.value)) {
                 return;
             }
+            this.get('controller').send('createTask');
+        }
+    },
+
+    keyDown: function(e)
+    {
+        if (e.target.id === 'task-create-text' && e.keyCode === 13) {
             this.get('controller').send('createTask');
         }
     }
