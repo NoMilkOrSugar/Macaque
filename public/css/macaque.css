@@ -21,7 +21,7 @@ h2 .badge {
     vertical-align: 4px;
 }
 
-p.muted code {
+.muted code {
     color: #999;
 }
 
@@ -96,6 +96,16 @@ td.text-right {
     height: 30px;
 }
 
-.list-view-tasks td.is-complete a {
+.view-title code {
+    font-size: 80%;
+    line-height: 1;
+}
+
+.task-view .view-title {
+    font-weight: normal;
+}
+
+.list-view-tasks td.is-complete a,
+.list-view-tasks td.is-complete code {
     color: #999;
 }

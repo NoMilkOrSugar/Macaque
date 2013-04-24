@@ -11,6 +11,31 @@ Ember.Handlebars.registerBoundHelper('formattedDate', function(date) {
     return moment(date).format('h:mma - D MMM YYYY');
 });
 
+Ember.Handlebars.registerBoundHelper('basicMarkdown', function(text) {
+
+    // HTML entities
+    text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // code elements
+    // https://github.com/coreyti/showdown/blob/master/src/showdown.js
+    text = text.replace(/(^|[^\\])(`+)([^\r]*?[^`])\2(?!`)/gm,
+        function(wholeMatch,m1,m2,m3,m4) {
+            return m1 +'<code>' + m3.replace(/^\s+|\s+$/g,'') + '</code>';
+        });
+
+    // bold elements
+    text = text.replace(/(\*\*|__)(?=\S)([^\r]*?\S[*_]*)\1/g, '<strong>$2</strong>');
+
+    // italic elements
+    text = text.replace(/(\*|_)(?=\S)([^\r]*?\S)\1/g, '<em>$2</em>');
+
+    return new Handlebars.SafeString(text);
+});
+
+/* ==========================================================================
+   Macaque
+   ========================================================================== */
+
 Macaque = Ember.Application.create({
     LOG_TRANSITIONS: true
 });
@@ -567,8 +592,10 @@ Macaque.TaskController = Ember.ObjectController.extend({
     {
         var lists = task.get('lists');
 
+        // this throws an error as of commit #5e9af43 - openTaskCount
         task.one('didDelete', this, function()
         {
+
             // force the parent lists to update because our hasMany is borked
             lists.forEach(function(list) {
                 list.reload();

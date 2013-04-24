@@ -150,7 +150,7 @@
             <tr>
                 <td {{bindAttr class="task.isComplete"}}>
                     {{view Ember.Checkbox checkedBinding="task.isComplete"}}
-                    {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
+                    {{#linkTo 'task' task}}{{basicMarkdown task.text}}{{/linkTo}}
                 </td>
             </tr>
             {{/unless}}
@@ -195,7 +195,7 @@
         <tr>
             <td {{bindAttr class="task.isComplete"}}>
             {{view Ember.Checkbox checkedBinding="task.isComplete"}}
-            {{#linkTo 'task' task}}{{task.text}}{{/linkTo}}
+            {{#linkTo 'task' task}}{{basicMarkdown task.text}}{{/linkTo}}
             </td>
             <td class="muted text-right">{{formattedDate task.modified}}</td>
         </tr>
@@ -223,7 +223,7 @@
     {{#if isEditing }}
         {{partial 'task/edit'}}
     {{else}}
-        <h2 class="view-title">{{view Ember.Checkbox checkedBinding="isComplete"}} {{text}}</h2>
+        <h2 class="view-title">{{view Ember.Checkbox checkedBinding="isComplete"}} {{basicMarkdown text}}</h2>
     {{/if }}
 
     <ul class="breadcrumb">
