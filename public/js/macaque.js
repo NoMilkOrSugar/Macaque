@@ -43,31 +43,62 @@ Macaque = Ember.Application.create({
 // enable History API (requires catch-all route on server)
 Macaque.Router.reopen({ location: 'history' });
 
+Macaque.RESTAdapter = DS.RESTAdapter.extend({
+
+    url: 'http://localhost:3000',
+
+    namespace: 'api',
+
+    serializer: DS.RESTSerializer.extend({
+
+        init: function()
+        {
+            this._super();
+
+            this.configure('plurals', {
+                list: 'lists',
+                task: 'tasks'
+            });
+        },
+
+        // the default Ember Serializer converts IDs to numbers meaning all-numeric
+        // MongoDB IDs are serialized in the URL like `5.1755256517945e`
+
+        // https://github.com/emberjs/data/blob/master/packages/ember-data/lib/system/serializer.js
+        // serializeId: function(id) {
+        //     if (isNaN(id)) { return id; }
+        //     return +id;
+        // }
+        serializeId: function(id) {
+            return id.toString();
+        },
+
+        // Ember Data only serializes hasMany relationships if they're embedded records
+        //
+        // Macaque.RESTAdapter.map('Macaque.Task', {
+        //     'lists': { embedded: 'always' }
+        // });
+        //
+        // Serialize hasMany IDs to mimic sideloaded relationships
+        //
+        addHasMany: function(hash, record, key, relationship)
+        {
+            if (/_ids$/.test(key)) {
+                hash[key] = [];
+                record.get(this.pluralize(key.replace(/_ids$/, ''))).forEach(function(item) {
+                    hash[key].push(item.get('id'));
+                });
+            }
+            return hash;
+        }
+    })
+});
+
 Macaque.Store = DS.Store.extend({
 
     revision: 12,
+    adapter: Macaque.RESTAdapter
 
-    adapter: DS.RESTAdapter.extend({
-
-        url: 'http://localhost:3000',
-
-        namespace: 'api',
-
-        serializer: DS.RESTSerializer.extend({
-
-            // the default Ember Serializer converts IDs to numbers meaning all-numeric
-            // MongoDB IDs are serialized in the URL like `5.1755256517945e`
-
-            // https://github.com/emberjs/data/blob/master/packages/ember-data/lib/system/serializer.js
-            // serializeId: function(id) {
-            //     if (isNaN(id)) { return id; }
-            //     return +id;
-            // }
-            serializeId: function(id) {
-                return id.toString();
-            }
-        })
-    })
 });
 
 Macaque.List = DS.Model.extend({
@@ -101,10 +132,6 @@ Macaque.Task = DS.Model.extend({
     isComplete : DS.attr('boolean'),
     isHidden   : DS.attr('boolean'),
     lists      : DS.hasMany('Macaque.List'),
-
-    // so we can pass the parent upon creation but return list_ids
-    // the RESTAdapter doesnt seem to send or update hasMany relationships
-    list      : DS.attr('string'),
 
     isCompleteChange: function () {
         Ember.run.once(this, function () {
@@ -355,7 +382,7 @@ Macaque.ListRoute = Ember.Route.extend({
 
         controller.set('content', model);
         controller.set('isEditing', false);
-        controller.set('newTask', { text: '', 'list': model.id });
+        controller.set('newTask', { text: '' });
     },
 
     events: {
@@ -390,33 +417,36 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     createTask: function()
     {
-        var list = Macaque.List.find(this.get('content').id),
+        var list = this.get('content'),
             task = Macaque.Task.createRecord(this.get('newTask'));
 
         task.set('created', new Date());
         task.set('modified', new Date());
-
-        // https://github.com/emberjs/data/issues/405
-        // http://stackoverflow.com/questions/15624193/many-to-many-relationships-with-ember-ember-data-and-rails
-        // https://gist.github.com/stefanpenner/9ccb0503e451a9792ed0
+        task.get('lists').pushObject(list);
 
         task.addObserver('id', function(task)
         {
-            setTimeout(function() {
-                list.reload();
-                // force the template view to update - why doesnt it?
-                list.one('didReload', function() {
-                    list.set('tasks', list.get('tasks'));
-                });
-                // // this method didn't update the task count
-                // list.get('tasks').pushObject(Macaque.Task.find(task.id));
-                // list.get('transaction').commit();
-            }, 1);
+            list.reload();
+
+            // now fixed with Macaque.RESTAdapter
+
+            // https://github.com/emberjs/data/issues/405
+            // http://stackoverflow.com/questions/15624193/many-to-many-relationships-with-ember-ember-data-and-rails
+            // https://gist.github.com/stefanpenner/9ccb0503e451a9792ed0
+            // list.get('tasks').pushObject(task);
+            // list.get('transaction').commit();
+            // setTimeout(function() {
+            //     list.reload();
+            //     list.one('didReload', function() {
+            //         list.set('tasks', list.get('tasks'));
+            //     });
+
+            // }, 1);
         });
 
         task.get('transaction').commit();
 
-        this.set('newTask', { text: '', 'list': list.id });
+        this.set('newTask', { text: '' });
     },
 
     removeList: function(list)
@@ -494,7 +524,8 @@ Macaque.TaskView = Ember.View.extend({
 
     click: function(e)
     {
-        if ($(e.target).closest('#task-view-edit-button').length) {
+        var el = $(e.target);
+        if (el.closest('#task-view-edit-button').length) {
             $('#task-view-edit-field').focus();
         }
     },
@@ -564,11 +595,10 @@ Macaque.TaskRoute = Ember.Route.extend({
                 if (!lists.get('length')) {
                     route.transitionTo('index');
                 }
-                // Ember Data doesn't seem to update hasMany relationships
+                // transition to first list after reload
                 lists.forEach(function(list, i) {
                     list.reload();
                     if (i) return;
-                    // transition to first list after reload
                     list.one('didReload', function() {
                         route.transitionTo('list', list);
                     });
@@ -579,6 +609,18 @@ Macaque.TaskRoute = Ember.Route.extend({
             task.set('isHidden', true);
             task.deleteRecord();
             task.get('transaction').commit();
+        },
+
+        removeFromList: function(list)
+        {
+            var task = this.currentModel;
+            // list.get('tasks').removeObject(task);
+            task.get('lists').removeObject(list);
+            task.one('didUpdate', function(task) {
+                list.reload();
+            });
+            // list.get('transaction').commit();
+            this.get('store').commit();
         }
     }
 });

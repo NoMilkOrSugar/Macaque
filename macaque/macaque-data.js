@@ -276,7 +276,8 @@ exports.findTask = function(req, res)
 {
     TaskModel.find({ '_id': req.params.id }, function(err, task) {
         if (err) return onError(res, err);
-        if (!task.length || !task[0].list_ids) {
+        if (!task.length) return onError(res, new Error('No task found'));
+        if (!task[0].list_ids) {
             onSuccess(res, { 'task': task[0] });
             return;
         }
@@ -293,23 +294,19 @@ exports.findTask = function(req, res)
 exports.addTask = function(req, res)
 {
     var task = new TaskModel(req.body.task);
-
-    // list id passed by Ember
-    var init_list = req.body.task.list;
-    if (init_list) {
-        task.list_ids.push(req.body.task.list);
-    }
-
     task.save(function(err) {
         if (err) return onError(res, err);
-        if (init_list) {
-            var list = ListModel.findOne({ '_id': init_list }, function(err, list) {
-                if (err) return;
+        if (!task.list_ids.length) {
+            onSuccess(res, { 'task': task });
+        }
+        ListModel.find({ '_id': { $in: task.list_ids }}, function(err, lists) {
+            if (err) return onError(res, err);
+            lists.forEach(function(list) {
                 list.task_ids.push(task._id);
                 list.save();
             });
-        }
-        onSuccess(res, { 'task': task });
+            onSuccess(res, { 'task': task });
+        });
     });
 };
 
@@ -317,9 +314,19 @@ exports.updateTask  = function(req, res)
 {
     var doc = req.body.task;
     doc.modified = new Date();
-    var task = TaskModel.findByIdAndUpdate(req.params.id, doc, function(err, task) {
+    TaskModel.findByIdAndUpdate(req.params.id, doc, function(err, task) {
         if (err) return onError(res, err);
-        onSuccess(res, { 'task': task });
+
+        // sync list hasMany relationships
+        ListModel.find({ 'task_ids': { $in: [task._id] }}, function(err, lists) {
+            lists.forEach(function(list) {
+                if (task.list_ids.indexOf(list._id) === -1) {
+                    list.task_ids.remove(task._id);
+                    list.save();
+                }
+            });
+            onSuccess(res, { 'task': task });
+        });
     });
 };
 

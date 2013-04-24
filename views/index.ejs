@@ -73,7 +73,7 @@
 <script type="text/x-handlebars" data-template-name="list-create">
 <div class="well well-small">
     <div class="input-append">
-        {{view Ember.TextField valueBinding="controller.newList.name" class="input-xxlarge" placeholder="New List…" id="list-create-text"}}
+        {{view Ember.TextField valueBinding="controller.newList.name" placeholder="New List…" id="list-create-text"}}
         <button class="btn" id="list-create-button"><i class="icon-pencil"></i> Add List</button>
     </div>
 </div>
@@ -172,7 +172,7 @@
 <script type="text/x-handlebars" data-template-name="task-create">
 <div class="well well-small">
     <div class="input-append">
-        {{view Ember.TextField valueBinding="controller.newTask.text" class="input-xxlarge" placeholder="New Task…" id="task-create-text"}}
+        {{view Ember.TextField valueBinding="controller.newTask.text" placeholder="New Task…" id="task-create-text"}}
         <button class="btn" id="task-create-button"><i class="icon-pencil"></i> Add Task</button>
     </div>
 </div>
@@ -234,13 +234,16 @@
         <li class="active">{{text}}</li>
     </ul>
 
-    <div class="well well-small">
-    <ul class="nav nav-pills">
-        <li class="active">{{#linkTo index}}<strong>Lists</strong>{{/linkTo}}</li>
-        {{#each list in lists}}
-        <li>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</li>
-        {{/each}}
-    </ul>
+    <h3>Lists</h3>
+    <div class="well well-small task-parents">
+        <ul class="nav nav-pills">
+            {{#each list in lists}}
+            <li>
+                {{#linkTo 'list' list}}{{list.name}}{{/linkTo}}
+                <button class="close" {{action removeFromList list}}>&times;</button>
+            </li>
+            {{/each}}
+        </ul>
     </div>
 
     {{#if previousList}}
