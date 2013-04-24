@@ -17,7 +17,9 @@ Macaque requires [Node](http://nodejs.org/) and [MongoDB](http://www.mongodb.org
 
 ### Loading Data
 
-Macaque can export and backup data as JSON via the API and to disk (in the `.macaque/` directory by default). To load the most recent backup run Macaque with `node app --backup`. The backup files in this repository include the development to-do lists — Macaque is now self-aware!
+Macaque can export and backup data as JSON via the API and to disk (in the `.macaque/` directory by default). If you launch Macaque with `node app` it will use the existing database.
+
+To load the most recent backup run `node app --backup`. To load a specific backup append the timestamp, e.g. `node app --backup 1366805028283`, or keyword `node app --backup autosave`. The backup files in this repository include the development to-do lists — Macaque is now self-aware!
 
 To reset Macaque with test data visit: `http://localhost:3000/api/import/fixtures`
 

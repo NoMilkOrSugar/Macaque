@@ -68,7 +68,6 @@ var onError = function(res, err)
 var onSuccess = function(res, data)
 {
     if (!res) return;
-
     if (data) {
         res.send(data);
     } else {
@@ -99,7 +98,7 @@ function getBackups(dir)
             return fs.statSync(dir + a).mtime.getTime() - fs.statSync(dir + b).mtime.getTime();
         });
         files.forEach(function(file) {
-            if (/^\.macaque-/.test(file)) {
+            if (/^\.macaque-[0-9]+/.test(file)) {
                 ret.push(file);
             }
         });
@@ -119,7 +118,8 @@ exports.exportBackup = function(app, req, res)
 {
     getData(function(data)
     {
-        var dir = app.get('backup dir');
+        var dir = app.get('backup dir'),
+            autosave = parseInt(req.query.autosave, 10) === 1;
 
         if (!dir) return onError(res, new Error('no backup directory configured'));
         if (!data) return onError(res, new Error('no backup data exported'));
@@ -127,7 +127,7 @@ exports.exportBackup = function(app, req, res)
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir);
         }
-        fs.open(dir + '/.macaque-' + new Date().getTime(), 'w', function(err, fd)
+        fs.open(dir + '/.macaque-' + (autosave ? 'autosave' : new Date().getTime()), 'w', function(err, fd)
         {
             if (err) return callback(err);
 
@@ -136,22 +136,27 @@ exports.exportBackup = function(app, req, res)
 
             onSuccess(res);
 
-            var count = 0, files = getBackups(dir);
-            files.reverse().forEach(function(file) {
-                if (++count > (parseInt(app.get('backup limit'), 10) || 10)) {
-                    if (fs.existsSync(dir + file)) fs.unlinkSync(dir + file);
-                }
-            });
+            if (!autosave) {
+                var count = 0, files = getBackups(dir);
+                files.reverse().forEach(function(file) {
+                    if (++count > (parseInt(app.get('backup limit'), 10) || 10)) {
+                        if (fs.existsSync(dir + file)) fs.unlinkSync(dir + file);
+                    }
+                });
+            }
         });
     });
 };
 
 exports.importBackup = function(app, req, res)
 {
-    var json, file, dir = app.get('backup dir');
+    var json,
+        dir = app.get('backup dir'),
+        file = app.get('backup file');
+
     if (!dir) return onError(res, new Error('no backup directory configured'));
 
-    file = getBackups(dir).pop();
+    if (!file) file = getBackups(dir).pop();
     if (!file) return onError(res, new Error('no backup files found'));
 
     fs.readFile(dir + file, 'utf8', function (err, data)
@@ -171,6 +176,7 @@ exports.importBackup = function(app, req, res)
             json.tasks.forEach(function(task) { new TaskModel(task).save(); });
         }
 
+        console.log('Loaded backup at: "' + dir + file + '"');
         onSuccess(res);
     });
 };
@@ -270,7 +276,8 @@ exports.findTask = function(req, res)
 {
     TaskModel.find({ '_id': req.params.id }, function(err, task) {
         if (err) return onError(res, err);
-        if (!task.length || !task[0].list_ids) {
+        if (!task.length) return onError(res, new Error('No task found'));
+        if (!task[0].list_ids) {
             onSuccess(res, { 'task': task[0] });
             return;
         }
@@ -287,23 +294,19 @@ exports.findTask = function(req, res)
 exports.addTask = function(req, res)
 {
     var task = new TaskModel(req.body.task);
-
-    // list id passed by Ember
-    var init_list = req.body.task.list;
-    if (init_list) {
-        task.list_ids.push(req.body.task.list);
-    }
-
     task.save(function(err) {
         if (err) return onError(res, err);
-        if (init_list) {
-            var list = ListModel.findOne({ '_id': init_list }, function(err, list) {
-                if (err) return;
+        if (!task.list_ids.length) {
+            onSuccess(res, { 'task': task });
+        }
+        ListModel.find({ '_id': { $in: task.list_ids }}, function(err, lists) {
+            if (err) return onError(res, err);
+            lists.forEach(function(list) {
                 list.task_ids.push(task._id);
                 list.save();
             });
-        }
-        onSuccess(res, { 'task': task });
+            onSuccess(res, { 'task': task });
+        });
     });
 };
 
@@ -311,9 +314,31 @@ exports.updateTask  = function(req, res)
 {
     var doc = req.body.task;
     doc.modified = new Date();
-    var task = TaskModel.findByIdAndUpdate(req.params.id, doc, function(err, task) {
+    TaskModel.findByIdAndUpdate(req.params.id, doc, function(err, task) {
         if (err) return onError(res, err);
-        onSuccess(res, { 'task': task });
+
+        // this could probably be simplified...
+        // add task to new lists
+        ListModel.find({ '_id': { $in: task.list_ids }}, function(err, lists) {
+            if (!err) {
+                lists.forEach(function(list) {
+                    if (list.task_ids.indexOf(task._id) === -1) {
+                        list.task_ids.push(task._id);
+                        list.save();
+                    }
+                });
+            }
+            // remove task from old lists
+            ListModel.find({ 'task_ids': { $in: [task._id] }}, function(err, lists) {
+                lists.forEach(function(list) {
+                    if (task.list_ids.indexOf(list._id) === -1) {
+                        list.task_ids.remove(task._id);
+                        list.save();
+                    }
+                });
+                onSuccess(res, { 'task': task });
+            });
+        });
     });
 };
 

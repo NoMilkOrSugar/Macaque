@@ -11,6 +11,31 @@ Ember.Handlebars.registerBoundHelper('formattedDate', function(date) {
     return moment(date).format('h:mma - D MMM YYYY');
 });
 
+Ember.Handlebars.registerBoundHelper('basicMarkdown', function(text) {
+
+    // HTML entities
+    text = (text||'').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // code elements
+    // https://github.com/coreyti/showdown/blob/master/src/showdown.js
+    text = text.replace(/(^|[^\\])(`+)([^\r]*?[^`])\2(?!`)/gm,
+        function(wholeMatch,m1,m2,m3,m4) {
+            return m1 +'<code>' + m3.replace(/^\s+|\s+$/g,'') + '</code>';
+        });
+
+    // bold elements
+    text = text.replace(/(\*\*|__)(?=\S)([^\r]*?\S[*_]*)\1/g, '<strong>$2</strong>');
+
+    // italic elements
+    text = text.replace(/(\*|_)(?=\S)([^\r]*?\S)\1/g, '<em>$2</em>');
+
+    return new Handlebars.SafeString(text);
+});
+
+/* ==========================================================================
+   Macaque
+   ========================================================================== */
+
 Macaque = Ember.Application.create({
     LOG_TRANSITIONS: true
 });
@@ -18,31 +43,62 @@ Macaque = Ember.Application.create({
 // enable History API (requires catch-all route on server)
 Macaque.Router.reopen({ location: 'history' });
 
+Macaque.RESTAdapter = DS.RESTAdapter.extend({
+
+    url: 'http://localhost:3000',
+
+    namespace: 'api',
+
+    serializer: DS.RESTSerializer.extend({
+
+        init: function()
+        {
+            this._super();
+
+            this.configure('plurals', {
+                list: 'lists',
+                task: 'tasks'
+            });
+        },
+
+        // the default Ember Serializer converts IDs to numbers meaning all-numeric
+        // MongoDB IDs are serialized in the URL like `5.1755256517945e`
+
+        // https://github.com/emberjs/data/blob/master/packages/ember-data/lib/system/serializer.js
+        // serializeId: function(id) {
+        //     if (isNaN(id)) { return id; }
+        //     return +id;
+        // }
+        serializeId: function(id) {
+            return id.toString();
+        },
+
+        // Ember Data only serializes hasMany relationships if they're embedded records
+        //
+        // Macaque.RESTAdapter.map('Macaque.Task', {
+        //     'lists': { embedded: 'always' }
+        // });
+        //
+        // Serialize hasMany IDs to mimic sideloaded relationships
+        //
+        addHasMany: function(hash, record, key, relationship)
+        {
+            if (/_ids$/.test(key)) {
+                hash[key] = [];
+                record.get(this.pluralize(key.replace(/_ids$/, ''))).forEach(function(item) {
+                    hash[key].push(item.get('id'));
+                });
+            }
+            return hash;
+        }
+    })
+});
+
 Macaque.Store = DS.Store.extend({
 
     revision: 12,
+    adapter: Macaque.RESTAdapter
 
-    adapter: DS.RESTAdapter.extend({
-
-        url: 'http://localhost:3000',
-
-        namespace: 'api',
-
-        serializer: DS.RESTSerializer.extend({
-
-            // the default Ember Serializer converts IDs to numbers meaning all-numeric
-            // MongoDB IDs are serialized in the URL like `5.1755256517945e`
-
-            // https://github.com/emberjs/data/blob/master/packages/ember-data/lib/system/serializer.js
-            // serializeId: function(id) {
-            //     if (isNaN(id)) { return id; }
-            //     return +id;
-            // }
-            serializeId: function(id) {
-                return id.toString();
-            }
-        })
-    })
 });
 
 Macaque.List = DS.Model.extend({
@@ -50,13 +106,23 @@ Macaque.List = DS.Model.extend({
     created  : DS.attr('date'),
     modified : DS.attr('date'),
     isHidden : DS.attr('boolean'),
-    tasks    : DS.hasMany('Macaque.Task'),
+    tasks    : DS.hasMany('Macaque.Task').property('tasks.@each.isHidden'),
 
-    // computed properties not stored in database
+    orderedTasks: function() {
+        return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
+            sortAscending: [true, false],
+            sortProperties: ['isComplete', 'modified'],
+            content: this.get('tasks')
+        });
+    }.property('tasks'),
 
     taskCount: function() {
         return this.get('tasks').get('length');
-    }.property('tasks')
+    }.property('tasks'),
+
+    openTaskCount: function() {
+        return this.get('tasks').filterProperty('isComplete', false).get('length');
+    }.property('tasks.@each.isComplete')
 });
 
 Macaque.Task = DS.Model.extend({
@@ -66,10 +132,6 @@ Macaque.Task = DS.Model.extend({
     isComplete : DS.attr('boolean'),
     isHidden   : DS.attr('boolean'),
     lists      : DS.hasMany('Macaque.List'),
-
-    // so we can pass the parent upon creation but return list_ids
-    // the RESTAdapter doesnt seem to send or update hasMany relationships
-    list      : DS.attr('string'),
 
     isCompleteChange: function () {
         Ember.run.once(this, function () {
@@ -218,7 +280,7 @@ Macaque.IndexRoute = Ember.Route.extend({
 
 Macaque.IndexController = Ember.Controller.extend({
 
-    lists: function() {
+    orderedLists: function() {
         return Ember.ArrayProxy.createWithMixins(Ember.SortableMixin, {
             sortAscending: false,
             sortProperties: ['modified'],
@@ -264,6 +326,13 @@ Macaque.ListCreateView = Ember.View.extend({
             }
             this.get('controller').send('createList');
         }
+    },
+
+    keyDown: function(e)
+    {
+        if (e.target.id === 'list-create-text' && e.keyCode === 13) {
+            this.get('controller').send('createList');
+        }
     }
 });
 
@@ -290,7 +359,6 @@ Macaque.ListView = Ember.View.extend({
             }
         }
     }
-
 });
 
 Macaque.ListRoute = Ember.Route.extend({
@@ -314,7 +382,7 @@ Macaque.ListRoute = Ember.Route.extend({
 
         controller.set('content', model);
         controller.set('isEditing', false);
-        controller.set('newTask', { text: '', 'list': model.id });
+        controller.set('newTask', { text: '' });
     },
 
     events: {
@@ -336,14 +404,6 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     isEditing: false,
 
-    tasks: function() {
-        return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
-            sortAscending: [true, false],
-            sortProperties: ['isComplete', 'modified'],
-            content: this.get('content.tasks')
-        });
-    }.property('content.tasks'),
-
     startEdit: function()
     {
         this.set('isEditing', true);
@@ -357,27 +417,36 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     createTask: function()
     {
-        var list = Macaque.List.find(this.get('content').id),
+        var list = this.get('content'),
             task = Macaque.Task.createRecord(this.get('newTask'));
 
         task.set('created', new Date());
         task.set('modified', new Date());
-
-        // https://github.com/emberjs/data/issues/405
-        // http://stackoverflow.com/questions/15624193/many-to-many-relationships-with-ember-ember-data-and-rails
-        // https://gist.github.com/stefanpenner/9ccb0503e451a9792ed0
+        task.get('lists').pushObject(list);
 
         task.addObserver('id', function(task)
         {
-            setTimeout(function() {
-                list.get('tasks').pushObject(Macaque.Task.find(task.id));
-                list.get('transaction').commit();
-            }, 1);
+            list.reload();
+
+            // now fixed with Macaque.RESTAdapter
+
+            // https://github.com/emberjs/data/issues/405
+            // http://stackoverflow.com/questions/15624193/many-to-many-relationships-with-ember-ember-data-and-rails
+            // https://gist.github.com/stefanpenner/9ccb0503e451a9792ed0
+            // list.get('tasks').pushObject(task);
+            // list.get('transaction').commit();
+            // setTimeout(function() {
+            //     list.reload();
+            //     list.one('didReload', function() {
+            //         list.set('tasks', list.get('tasks'));
+            //     });
+
+            // }, 1);
         });
 
         task.get('transaction').commit();
 
-        this.set('newTask', { text: '', 'list': list.id });
+        this.set('newTask', { text: '' });
     },
 
     removeList: function(list)
@@ -403,6 +472,13 @@ Macaque.TaskCreateView = Ember.View.extend({
             }
             this.get('controller').send('createTask');
         }
+    },
+
+    keyDown: function(e)
+    {
+        if (e.target.id === 'task-create-text' && e.keyCode === 13) {
+            this.get('controller').send('createTask');
+        }
     }
 });
 
@@ -425,7 +501,7 @@ Macaque.TasksRoute = Ember.Route.extend({
 
 Macaque.TasksController = Ember.Controller.extend({
 
-    tasks: function() {
+    orderedTasks: function() {
         return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
             sortAscending: [true, false],
             sortProperties: ['isComplete', 'modified'],
@@ -433,10 +509,9 @@ Macaque.TasksController = Ember.Controller.extend({
         });
     }.property('content'),
 
-    taskCount: function() {
-        return this.get('tasks').get('length');
-    }.property('tasks.@each')
-
+    openTaskCount: function() {
+        return this.get('orderedTasks').filterProperty('isComplete', false).get('length');
+    }.property('orderedTasks.@each.isComplete')
 });
 
 /* ==========================================================================
@@ -449,7 +524,8 @@ Macaque.TaskView = Ember.View.extend({
 
     click: function(e)
     {
-        if ($(e.target).closest('#task-view-edit-button').length) {
+        var el = $(e.target);
+        if (el.closest('#task-view-edit-button').length) {
             $('#task-view-edit-field').focus();
         }
     },
@@ -487,7 +563,7 @@ Macaque.TaskRoute = Ember.Route.extend({
         if (previousList) {
             controller.set('previousList', previousList);
 
-            var tasks = previousList.get('tasks'),
+            var tasks = previousList.get('orderedTasks'),
                 index = tasks.indexOf(model),
                 count = tasks.get('length');
 
@@ -496,6 +572,9 @@ Macaque.TaskRoute = Ember.Route.extend({
                 controller.set('previousTask', tasks.objectAt( index > 0 ? index - 1 : count - 1 ));
             }
         }
+
+        controller.set('selectedList', null);
+        controller.set('selectLists', this.controllerFor('index').get('orderedLists'));
 
         controller.set('content', model);
         controller.set('isEditing', false);
@@ -510,23 +589,36 @@ Macaque.TaskRoute = Ember.Route.extend({
 
         remove: function()
         {
-            var task = this.currentModel,
-                list = task.get('lists').objectAt(0);
+            var route = this,
+                task = this.currentModel,
+                lists = task.get('lists');
 
-            this.get('controller').removeTask(task);
+            task.one('didDelete', function()
+            {
+                if (!lists.get('length')) {
+                    route.transitionTo('index');
+                }
+                // transition to first list after reload
+                lists.forEach(function(list, i) {
+                    list.reload();
+                    if (i) return;
+                    list.one('didReload', function() {
+                        route.transitionTo('list', list);
+                    });
+                });
+            });
 
-            if (list) {
-                this.transitionTo('list', list);
-            } else {
-                this.transitionTo('index');
-            }
+            // hide from template until the task is deleted
+            task.set('isHidden', true);
+            task.deleteRecord();
+            task.get('transaction').commit();
         }
     }
 });
 
 Macaque.TaskController = Ember.ObjectController.extend({
 
-    needs: 'application',
+    needs: ['application', 'index'],
 
     isEditing: false,
 
@@ -541,26 +633,28 @@ Macaque.TaskController = Ember.ObjectController.extend({
         this.get('store').commit();
     },
 
-    removeTask: function(task)
+    addToList: function()
     {
-        var lists = task.get('lists');
 
-        task.one('didDelete', this, function()
-        {
-            // force the parent lists to update because our hasMany is borked
-            lists.forEach(function(list) {
-                list.reload();
-                // force the template view to update - why doesnt it?
-                list.one('didReload', function() {
-                    list.set('tasks', list.get('tasks'));
-                });
-            });
+        var task = this.get('content'),
+            list = this.get('selectedList');
+
+        if (!list || task.get('lists').contains(list)) return;
+
+        task.get('lists').addObject(list);
+        task.one('didUpdate', function(task) {
+            list.reload();
         });
+        task.get('transaction').commit();
+    },
 
-        // hide from template until the task is deleted
-        task.set('isHidden', true);
-        task.deleteRecord();
-        // this.get('store').commit();
+    removeFromList: function(list)
+    {
+        var task = this.get('content');
+        task.get('lists').removeObject(list);
+        task.one('didUpdate', function(task) {
+            list.reload();
+        });
         task.get('transaction').commit();
     }
 });
