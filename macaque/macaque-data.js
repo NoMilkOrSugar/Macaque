@@ -317,15 +317,27 @@ exports.updateTask  = function(req, res)
     TaskModel.findByIdAndUpdate(req.params.id, doc, function(err, task) {
         if (err) return onError(res, err);
 
-        // sync list hasMany relationships
-        ListModel.find({ 'task_ids': { $in: [task._id] }}, function(err, lists) {
-            lists.forEach(function(list) {
-                if (task.list_ids.indexOf(list._id) === -1) {
-                    list.task_ids.remove(task._id);
-                    list.save();
-                }
+        // this could probably be simplified...
+        // add task to new lists
+        ListModel.find({ '_id': { $in: task.list_ids }}, function(err, lists) {
+            if (!err) {
+                lists.forEach(function(list) {
+                    if (list.task_ids.indexOf(task._id) === -1) {
+                        list.task_ids.push(task._id);
+                        list.save();
+                    }
+                });
+            }
+            // remove task from old lists
+            ListModel.find({ 'task_ids': { $in: [task._id] }}, function(err, lists) {
+                lists.forEach(function(list) {
+                    if (task.list_ids.indexOf(list._id) === -1) {
+                        list.task_ids.remove(task._id);
+                        list.save();
+                    }
+                });
+                onSuccess(res, { 'task': task });
             });
-            onSuccess(res, { 'task': task });
         });
     });
 };

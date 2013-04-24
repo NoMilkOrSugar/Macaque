@@ -92,7 +92,7 @@
 <div class="well">
     <p>When starting <strong><%= title %></strong> run <code>node app --backup</code> to load the most recent backup into the database.</p>
     <p>
-        <button class="btn btn-large" {{action backup}}><i class="icon-download-alt"></i> Save Backup</button>
+        <button class="btn btn-large" {{action 'backup'}}><i class="icon-download-alt"></i> Save Backup</button>
         <a class="btn btn-link" href="/api/export" target="_new">(Download JSON)</a>
     </p>
     <p class="muted">By default backups are saved to <code>.macaque</code></p>
@@ -114,13 +114,13 @@
 <script type="text/x-handlebars" data-template-name="list">
 
     <div class="btn-group pull-right list-view-actions">
-        <button {{action edit}} class="btn" id="list-view-edit-button"><i class="icon-edit"></i> Edit List</button>
+        <button {{action 'edit'}} class="btn" id="list-view-edit-button"><i class="icon-edit"></i> Edit List</button>
         <button class="btn dropdown-toggle" data-toggle="dropdown">
         <span class="caret"></span>
         </button>
         <ul class="dropdown-menu">
             <li>
-                <a href="#" {{action remove}}><i class="icon-remove"></i> Delete List</a>
+                <a href="#" {{action 'remove'}}><i class="icon-remove"></i> Delete List</a>
             </li>
         </ul>
     </div>
@@ -165,7 +165,7 @@
 <script type="text/x-handlebars" data-template-name="list/_edit">
 <div class="input-append list-edit-view">
     {{view Ember.TextField valueBinding="name" id="list-view-edit-field"}}
-    <button class="btn" {{action endEdit}}><i class="icon-ok"></i></button>
+    <button class="btn" {{action 'endEdit'}}><i class="icon-ok"></i></button>
 </div>
 </script>
 
@@ -209,13 +209,13 @@
 <script type="text/x-handlebars" data-template-name="task">
 
     <div class="btn-group pull-right task-view-actions">
-        <button {{action edit}} class="btn" id="task-view-edit-button"><i class="icon-edit"></i> Edit Task</button>
+        <button {{action 'edit'}} class="btn" id="task-view-edit-button"><i class="icon-edit"></i> Edit Task</button>
         <button class="btn dropdown-toggle" data-toggle="dropdown">
         <span class="caret"></span>
         </button>
         <ul class="dropdown-menu">
             <li>
-                <a href="#" {{action remove}}><i class="icon-remove"></i> Delete Task</a>
+                <a href="#" {{action 'remove'}}><i class="icon-remove"></i> Delete Task</a>
             </li>
         </ul>
     </div>
@@ -240,10 +240,20 @@
             {{#each list in lists}}
             <li>
                 {{#linkTo 'list' list}}{{list.name}}{{/linkTo}}
-                <button class="close" {{action removeFromList list}}>&times;</button>
+                <button class="close" {{action 'removeFromList' list}}>&times;</button>
             </li>
             {{/each}}
         </ul>
+    </div>
+
+    <div class="form-inline text-right">
+    {{view Ember.Select viewName="select"
+        contentBinding="controller.selectLists"
+        optionLabelPath="content.name"
+        optionValuePath="content.id"
+        prompt="Select list…"
+        selectionBinding="controller.selectedList"}}
+    <button class="btn" {{action 'addToList'}}>Add To List</button>
     </div>
 
     {{#if previousList}}
@@ -264,7 +274,7 @@
 <script type="text/x-handlebars" data-template-name="task/_edit">
 <div class="input-append task-edit-view">
     {{view Ember.TextField valueBinding="text" id="task-view-edit-field"}}
-    <button class="btn" {{action endEdit}}><i class="icon-ok"></i></button>
+    <button class="btn" {{action 'endEdit'}}><i class="icon-ok"></i></button>
 </div>
 </script>
 

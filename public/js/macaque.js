@@ -573,6 +573,9 @@ Macaque.TaskRoute = Ember.Route.extend({
             }
         }
 
+        controller.set('selectedList', null);
+        controller.set('selectLists', this.controllerFor('index').get('orderedLists'));
+
         controller.set('content', model);
         controller.set('isEditing', false);
     },
@@ -609,25 +612,13 @@ Macaque.TaskRoute = Ember.Route.extend({
             task.set('isHidden', true);
             task.deleteRecord();
             task.get('transaction').commit();
-        },
-
-        removeFromList: function(list)
-        {
-            var task = this.currentModel;
-            // list.get('tasks').removeObject(task);
-            task.get('lists').removeObject(list);
-            task.one('didUpdate', function(task) {
-                list.reload();
-            });
-            // list.get('transaction').commit();
-            this.get('store').commit();
         }
     }
 });
 
 Macaque.TaskController = Ember.ObjectController.extend({
 
-    needs: 'application',
+    needs: ['application', 'index'],
 
     isEditing: false,
 
@@ -640,5 +631,30 @@ Macaque.TaskController = Ember.ObjectController.extend({
     {
         this.set('isEditing', false);
         this.get('store').commit();
+    },
+
+    addToList: function()
+    {
+
+        var task = this.get('content'),
+            list = this.get('selectedList');
+
+        if (!list || task.get('lists').contains(list)) return;
+
+        task.get('lists').addObject(list);
+        task.one('didUpdate', function(task) {
+            list.reload();
+        });
+        task.get('transaction').commit();
+    },
+
+    removeFromList: function(list)
+    {
+        var task = this.get('content');
+        task.get('lists').removeObject(list);
+        task.one('didUpdate', function(task) {
+            list.reload();
+        });
+        task.get('transaction').commit();
     }
 });
