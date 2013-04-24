@@ -75,7 +75,7 @@ Macaque.List = DS.Model.extend({
     created  : DS.attr('date'),
     modified : DS.attr('date'),
     isHidden : DS.attr('boolean'),
-    tasks    : DS.hasMany('Macaque.Task'),
+    tasks    : DS.hasMany('Macaque.Task').property('tasks.@each.isHidden'),
 
     // computed properties not stored in database
 
@@ -557,16 +557,30 @@ Macaque.TaskRoute = Ember.Route.extend({
 
         remove: function()
         {
-            var task = this.currentModel,
-                list = task.get('lists').objectAt(0);
+            var route = this,
+                task = this.currentModel,
+                lists = task.get('lists');
 
-            this.get('controller').removeTask(task);
+            task.one('didDelete', function()
+            {
+                if (!lists.get('length')) {
+                    route.transitionTo('index');
+                }
+                // Ember Data doesn't seem to update hasMany relationships
+                lists.forEach(function(list, i) {
+                    list.reload();
+                    if (i) return;
+                    // transition to first list after reload
+                    list.one('didReload', function() {
+                        route.transitionTo('list', list);
+                    });
+                });
+            });
 
-            if (list) {
-                this.transitionTo('list', list);
-            } else {
-                this.transitionTo('index');
-            }
+            // hide from template until the task is deleted
+            task.set('isHidden', true);
+            task.deleteRecord();
+            task.get('transaction').commit();
         }
     }
 });
@@ -586,30 +600,5 @@ Macaque.TaskController = Ember.ObjectController.extend({
     {
         this.set('isEditing', false);
         this.get('store').commit();
-    },
-
-    removeTask: function(task)
-    {
-        var lists = task.get('lists');
-
-        // this throws an error as of commit #5e9af43 - openTaskCount
-        task.one('didDelete', this, function()
-        {
-
-            // force the parent lists to update because our hasMany is borked
-            lists.forEach(function(list) {
-                list.reload();
-                // force the template view to update - why doesnt it?
-                list.one('didReload', function() {
-                    list.set('tasks', list.get('tasks'));
-                });
-            });
-        });
-
-        // hide from template until the task is deleted
-        task.set('isHidden', true);
-        task.deleteRecord();
-        // this.get('store').commit();
-        task.get('transaction').commit();
     }
 });
