@@ -14,7 +14,7 @@ Ember.Handlebars.registerBoundHelper('formattedDate', function(date) {
 Ember.Handlebars.registerBoundHelper('basicMarkdown', function(text) {
 
     // HTML entities
-    text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    text = (text||'').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     // code elements
     // https://github.com/coreyti/showdown/blob/master/src/showdown.js

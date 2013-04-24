@@ -68,7 +68,6 @@ var onError = function(res, err)
 var onSuccess = function(res, data)
 {
     if (!res) return;
-
     if (data) {
         res.send(data);
     } else {
@@ -99,7 +98,7 @@ function getBackups(dir)
             return fs.statSync(dir + a).mtime.getTime() - fs.statSync(dir + b).mtime.getTime();
         });
         files.forEach(function(file) {
-            if (/^\.macaque-/.test(file)) {
+            if (/^\.macaque-[0-9]+/.test(file)) {
                 ret.push(file);
             }
         });
@@ -119,7 +118,8 @@ exports.exportBackup = function(app, req, res)
 {
     getData(function(data)
     {
-        var dir = app.get('backup dir');
+        var dir = app.get('backup dir'),
+            autosave = parseInt(req.query.autosave, 10) === 1;
 
         if (!dir) return onError(res, new Error('no backup directory configured'));
         if (!data) return onError(res, new Error('no backup data exported'));
@@ -127,7 +127,7 @@ exports.exportBackup = function(app, req, res)
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir);
         }
-        fs.open(dir + '/.macaque-' + new Date().getTime(), 'w', function(err, fd)
+        fs.open(dir + '/.macaque-' + (autosave ? 'autosave' : new Date().getTime()), 'w', function(err, fd)
         {
             if (err) return callback(err);
 
@@ -136,22 +136,27 @@ exports.exportBackup = function(app, req, res)
 
             onSuccess(res);
 
-            var count = 0, files = getBackups(dir);
-            files.reverse().forEach(function(file) {
-                if (++count > (parseInt(app.get('backup limit'), 10) || 10)) {
-                    if (fs.existsSync(dir + file)) fs.unlinkSync(dir + file);
-                }
-            });
+            if (!autosave) {
+                var count = 0, files = getBackups(dir);
+                files.reverse().forEach(function(file) {
+                    if (++count > (parseInt(app.get('backup limit'), 10) || 10)) {
+                        if (fs.existsSync(dir + file)) fs.unlinkSync(dir + file);
+                    }
+                });
+            }
         });
     });
 };
 
 exports.importBackup = function(app, req, res)
 {
-    var json, file, dir = app.get('backup dir');
+    var json,
+        dir = app.get('backup dir'),
+        file = app.get('backup file');
+
     if (!dir) return onError(res, new Error('no backup directory configured'));
 
-    file = getBackups(dir).pop();
+    if (!file) file = getBackups(dir).pop();
     if (!file) return onError(res, new Error('no backup files found'));
 
     fs.readFile(dir + file, 'utf8', function (err, data)
@@ -171,6 +176,7 @@ exports.importBackup = function(app, req, res)
             json.tasks.forEach(function(task) { new TaskModel(task).save(); });
         }
 
+        console.log('Loaded backup at: "' + dir + file + '"');
         onSuccess(res);
     });
 };

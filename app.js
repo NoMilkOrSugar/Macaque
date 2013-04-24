@@ -19,7 +19,10 @@ app.set('mongodb url', 'mongodb://localhost:27017/');
 app.set('mongodb name', 'macaque');
 
 // auto export/import MongoDB data
+app.set('backup', true);
+// relative directory in which to save backups
 app.set('backup dir', '.macaque/');
+// maximum number of backups to save before oldest is deleted
 app.set('backup limit', 10);
 
 app.set('views', __dirname + '/views');
@@ -53,6 +56,18 @@ app.use(function(req, res, next)
    Macaque API
    ========================================================================== */
 
+var _backup = null;
+
+function autoSaveBackup()
+{
+    if (app.get('backup')) {
+        clearTimeout(_backup);
+        _backup = setTimeout(function() {
+            data.exportBackup(app, { query: { autosave: 1 }});
+        }, 2000);
+    }
+}
+
 // retrieve API version
 app.get('/api', function(req, res)
 {
@@ -72,18 +87,36 @@ app.get('/api/export/backup', function(req, res) { data.exportBackup(app, req, r
 app.get('/api/export', data.exportJSON);
 
 // list API paths
-app.get('/api/lists',        data.findLists);
-app.get('/api/lists/:id',    data.findList);
-app.post('/api/lists',       data.addList);
-app.put('/api/lists/:id',    data.updateList);
-app.delete('/api/lists/:id', data.deleteList);
+app.get('/api/lists', data.findLists);
+app.get('/api/lists/:id', data.findList);
+app.post('/api/lists', function(req, res) {
+    data.addList(req, res);
+    autoSaveBackup();
+});
+app.put('/api/lists/:id', function(req, res) {
+    data.updateList(req, res);
+    autoSaveBackup();
+});
+app.delete('/api/lists/:id', function(req, res) {
+    data.deleteList(req, res);
+    autoSaveBackup();
+});
 
 // task API paths
-app.get('/api/tasks',        data.findTasks);
-app.get('/api/tasks/:id',    data.findTask);
-app.post('/api/tasks',       data.addTask);
-app.put('/api/tasks/:id',    data.updateTask);
-app.delete('/api/tasks/:id', data.deleteTask);
+app.get('/api/tasks', data.findTasks);
+app.get('/api/tasks/:id', data.findTask);
+app.post('/api/tasks', function(req, res) {
+    data.addTask(req, res);
+    autoSaveBackup();
+});
+app.put('/api/tasks/:id', function(req, res) {
+    data.updateTask(req, res);
+    autoSaveBackup();
+});
+app.delete('/api/tasks/:id', function(req, res) {
+    data.deleteTask(req, res);
+    autoSaveBackup();
+});
 
 
 /* ==========================================================================
@@ -101,11 +134,14 @@ app.get('/*', function(req, res)
 // open MongoDB
 data.openDb(app.get('mongodb url'), app.get('mongodb name'));
 
-var args = process.argv.splice(2);
+var i, args = process.argv.splice(2);
 
 // import data from backup
-if (args.indexOf('--backup') !== -1) {
-    if (app.get('backup dir')) {
+if ((i = args.indexOf('--backup')) !== -1) {
+    if (app.get('backup')) {
+        if (args.length > i + 1) {
+            app.set('backup file', '.macaque-' + args[i + 1]);
+        }
         data.importBackup(app);
     }
 }
