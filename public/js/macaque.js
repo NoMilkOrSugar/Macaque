@@ -61,6 +61,10 @@ Macaque.RESTAdapter = DS.RESTAdapter.extend({
             });
         },
 
+        primaryKey: function(type) {
+            return '_id';
+        },
+
         // the default Ember Serializer converts IDs to numbers meaning all-numeric
         // MongoDB IDs are serialized in the URL like `5.1755256517945e`
 

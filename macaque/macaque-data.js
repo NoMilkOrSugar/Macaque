@@ -20,14 +20,6 @@ var listSchema = mongoose.Schema({
     'task_ids'  : [{ 'type': ObjectId, ref: 'TaskModel' }]
 });
 
-listSchema.virtual('id').get(function() {
-    return this._id.toHexString();
-});
-
-listSchema.set('toJSON', {
-    virtuals: true
-});
-
 var taskSchema = mongoose.Schema({
     'text'        : { 'type': String, 'default': 'Untitled', validate: validateString },
     'created'     : { 'type': Date, 'default': Date.now },
@@ -35,14 +27,6 @@ var taskSchema = mongoose.Schema({
     'is_complete' : { 'type': Boolean, 'default': false },
     'is_hidden'   : { 'type': Boolean, 'default': false },
     'list_ids'    : [{ 'type': ObjectId, ref: 'ListModel' }]
-});
-
-taskSchema.virtual('id').get(function() {
-    return this._id.toHexString();
-});
-
-taskSchema.set('toJSON', {
-    virtuals: true
 });
 
 var ListModel = mongoose.model('ListModel', listSchema);
