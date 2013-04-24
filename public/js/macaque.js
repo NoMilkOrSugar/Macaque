@@ -77,7 +77,13 @@ Macaque.List = DS.Model.extend({
     isHidden : DS.attr('boolean'),
     tasks    : DS.hasMany('Macaque.Task').property('tasks.@each.isHidden'),
 
-    // computed properties not stored in database
+    orderedTasks: function() {
+        return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
+            sortAscending: [true, false],
+            sortProperties: ['isComplete', 'modified'],
+            content: this.get('tasks')
+        });
+    }.property('tasks'),
 
     taskCount: function() {
         return this.get('tasks').get('length');
@@ -247,7 +253,7 @@ Macaque.IndexRoute = Ember.Route.extend({
 
 Macaque.IndexController = Ember.Controller.extend({
 
-    lists: function() {
+    orderedLists: function() {
         return Ember.ArrayProxy.createWithMixins(Ember.SortableMixin, {
             sortAscending: false,
             sortProperties: ['modified'],
@@ -371,14 +377,6 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     isEditing: false,
 
-    tasks: function() {
-        return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
-            sortAscending: [true, false],
-            sortProperties: ['isComplete', 'modified'],
-            content: this.get('content.tasks')
-        });
-    }.property('content.tasks'),
-
     startEdit: function()
     {
         this.set('isEditing', true);
@@ -473,7 +471,7 @@ Macaque.TasksRoute = Ember.Route.extend({
 
 Macaque.TasksController = Ember.Controller.extend({
 
-    tasks: function() {
+    orderedTasks: function() {
         return Ember.ArrayProxy.createWithMixins(Macaque.SortableMixin, {
             sortAscending: [true, false],
             sortProperties: ['isComplete', 'modified'],
@@ -482,8 +480,8 @@ Macaque.TasksController = Ember.Controller.extend({
     }.property('content'),
 
     openTaskCount: function() {
-        return this.get('tasks').filterProperty('isComplete', false).get('length');
-    }.property('tasks.@each.isComplete')
+        return this.get('orderedTasks').filterProperty('isComplete', false).get('length');
+    }.property('orderedTasks.@each.isComplete')
 });
 
 /* ==========================================================================
@@ -534,7 +532,7 @@ Macaque.TaskRoute = Ember.Route.extend({
         if (previousList) {
             controller.set('previousList', previousList);
 
-            var tasks = previousList.get('tasks'),
+            var tasks = previousList.get('orderedTasks'),
                 index = tasks.indexOf(model),
                 count = tasks.get('length');
 
