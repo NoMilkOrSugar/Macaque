@@ -69,7 +69,7 @@ describe('Macaque API', function()
             macaqueAPI('/api/lists', function(data)
             {
                 var list = JSON.parse(data).lists[0];
-                macaqueAPI('/api/lists/' + list.id, function(data)
+                macaqueAPI('/api/lists/' + list._id, function(data)
                 {
                     var json = JSON.parse(data);
                     assert.equal(true, typeof json.list === 'object');
@@ -97,7 +97,7 @@ describe('Macaque API', function()
                 json = JSON.parse(data);
                 assert.equal(true, typeof json.list === 'object');
                 assert.equal(true, json.list.name === name);
-                macaqueAPI('/api/lists/' + json.list.id, function(data)
+                macaqueAPI('/api/lists/' + json.list._id, function(data)
                 {
                     json = JSON.parse(data);
                     assert.equal(true, json.list === null);
@@ -115,12 +115,12 @@ describe('Macaque API', function()
                 list = json.list;
                 assert.equal(true, typeof list === 'object');
                 assert.equal(true, list.name === name);
-                macaqueAPI('/api/lists/' + list.id, function(data)
+                macaqueAPI('/api/lists/' + list._id, function(data)
                 {
                     json = JSON.parse(data);
                     assert.equal(true, typeof json.list === 'object');
                     assert.equal(true, json.list.name === name + '_edit');
-                    macaqueAPI('/api/lists/' + list.id, function(data)
+                    macaqueAPI('/api/lists/' + list._id, function(data)
                     {
                         json = JSON.parse(data);
                         assert.equal(true, json.list === null);
@@ -150,7 +150,7 @@ describe('Macaque API', function()
             macaqueAPI('/api/tasks', function(data)
             {
                 var task = JSON.parse(data).tasks[0];
-                macaqueAPI('/api/tasks/' + task.id, function(data)
+                macaqueAPI('/api/tasks/' + task._id, function(data)
                 {
                     var json = JSON.parse(data);
                     assert.equal(true, typeof json.task === 'object');
@@ -178,7 +178,7 @@ describe('Macaque API', function()
                 json = JSON.parse(data);
                 assert.equal(true, typeof json.task === 'object');
                 assert.equal(true, json.task.text === text);
-                macaqueAPI('/api/tasks/' + json.task.id, function(data)
+                macaqueAPI('/api/tasks/' + json.task._id, function(data)
                 {
                     json = JSON.parse(data);
                     assert.equal(true, json.task === null);
@@ -200,13 +200,13 @@ describe('Macaque API', function()
                     json = JSON.parse(data);
                     assert.equal(true, json.task.text === text);
                     assert.equal(true, json.task.list_ids[0] === list._id);
-                    macaqueAPI('/api/tasks/' + json.task.id, function(data)
+                    macaqueAPI('/api/tasks/' + json.task._id, function(data)
                     {
                         json = JSON.parse(data);
                         assert.equal(true, json.task === null);
                         done();
                     }, 'DELETE');
-                }, 'POST', { 'task': { 'text': text, 'list_ids': [list.id] } });
+                }, 'POST', { 'task': { 'text': text, 'list_ids': [list._id] } });
             });
         });
 
@@ -218,11 +218,11 @@ describe('Macaque API', function()
                 json = JSON.parse(data);
                 task = json.task;
                 assert.equal(true, task.text === text);
-                macaqueAPI('/api/tasks/' + task.id, function(data)
+                macaqueAPI('/api/tasks/' + task._id, function(data)
                 {
                     json = JSON.parse(data);
-                    assert.equal(true, json.task.id === task.id);
-                    macaqueAPI('/api/tasks/' + task.id, function(data)
+                    assert.equal(true, json.task._id === task._id);
+                    macaqueAPI('/api/tasks/' + task._id, function(data)
                     {
                         json = JSON.parse(data);
                         assert.equal(true, json.task === null);

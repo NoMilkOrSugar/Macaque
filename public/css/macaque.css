@@ -15,10 +15,8 @@ body {
     }
 }
 
-h2 .badge {
-    font-size: 14px;
-    padding: 4px 8px;
-    vertical-align: 4px;
+.navbar .nav a.active {
+    color: #fff !important;
 }
 
 .muted code {
@@ -41,31 +39,13 @@ td.text-right {
 }
 
 /* ==========================================================================
-   List / Task Views
+   Tasks
    ========================================================================== */
 
-.view-title {
-    margin-top: 0;
-}
-
-.list-view-actions,
-.task-view-actions {
-    margin-top: 6px;
-}
-
-.list-edit-view,
-.task-edit-view {
-    display: block;
-    height: 44px;
-    margin: 0;
-    padding-top: 6px;
-}
-
-.view-title input[type="checkbox"],
-.list-view-tasks input[type="checkbox"] {
+.tasks__checkbox {
     display: block;
     float: left;
-    margin: 0 10px 0 0;
+    margin: 0 10px 0 0 !important;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -73,8 +53,7 @@ td.text-right {
     outline: none;
 }
 
-.view-title input[type="checkbox"]:before,
-.list-view-tasks input[type="checkbox"]:before {
+.tasks__checkbox:before {
     display: block;
     content: "";
     width: 18px;
@@ -83,59 +62,105 @@ td.text-right {
     background-size: 100% 100%;
 }
 
-.view-title input[type="checkbox"]:checked:before,
-.list-view-tasks input[type="checkbox"]:checked:before {
+.tasks__checkbox:checked:before {
     background-image: url("../img/icon-checkbox-active.svg");
 }
 
-.view-title input[type="checkbox"] {
-    margin: 5px 10px 0 0;
-}
-.view-title input[type="checkbox"]:before {
-    width: 30px;
-    height: 30px;
-}
-
-.view-title code {
-    font-size: 80%;
-    line-height: 1;
-}
-
-.task-view .view-title {
-    font-weight: normal;
-}
-
-.list-view-tasks td.is-complete a,
-.list-view-tasks td.is-complete code {
+.tasks__row .is-complete a,
+.tasks__row .is-complete code {
     color: #999;
 }
 
-#list-create-text,
-#task-create-text {
-    width: 100%;
-    min-height: 30px;
-    box-sizing: border-box;
+/* ==========================================================================
+   View
+   ========================================================================== */
+
+.view__title {
+    margin-top: 0;
 }
 
-#list-create-button,
-#task-create-button {
-    width: 100px;
-    padding: 4px 0;
+.view__title input[type="checkbox"] {
+    display: block;
+    float: left;
+    margin: 5px 10px 0 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none;
+    outline: none;
 }
 
-.list-create-view .input-append,
-.task-create-view .input-append {
+.view__title input[type="checkbox"]:before {
+    display: block;
+    content: "";
+    width: 30px;
+    height: 30px;
+    background: transparent url("../img/icon-checkbox.svg") 0 0 no-repeat;
+    background-size: 100% 100%;
+}
+
+.view__title input[type="checkbox"]:checked:before {
+    background-image: url("../img/icon-checkbox-active.svg");
+}
+
+.view__title .badge {
+    font-size: 14px;
+    padding: 4px 8px;
+    vertical-align: 4px;
+}
+
+.view__title code {
+    font-size: 80%;
+    line-height: 1;
+    border-color: #e1e1e8;
+}
+
+.view__title--light {
+    font-weight: normal;
+}
+
+.view-actions {
+    margin-top: 6px;
+}
+
+.view-edit {
+    display: block;
+    height: 44px;
+    margin: 0;
+    padding-top: 6px;
+}
+
+/* ==========================================================================
+   Create View
+   ========================================================================== */
+
+.create-view__form {
     width: 100% !important;
-    padding-right: 100px;
-    box-sizing: border-box;
+    padding-right: 100px !important;
+    box-sizing: border-box !important;
 }
 
-.task-parents li {
+.create-view__text {
+    width: 100% !important;
+    min-height: 30px !important;
+    box-sizing: border-box !important;
+}
+
+.create-view__button {
+    width: 100px !important;
+    padding: 4px 0 !important;
+}
+
+/* ==========================================================================
+   Task
+   ========================================================================== */
+
+.task-parents__item {
     position: relative;
     padding-right: 24px !important;
 }
 
-.task-parents .close {
+.task-parents__close {
     position: absolute;
     top: 0;
     right: 0;
