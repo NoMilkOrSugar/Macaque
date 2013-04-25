@@ -12,20 +12,14 @@ var Browser = require('zombie'),
 
 describe('Visit Index', function()
 {
-    var browser;
-
-    before(function(done)
+    it('should load page with title "Macaque"', function(done)
     {
-        browser = new Browser();
+        var browser = new Browser();
         browser.visit('http://localhost:3000/tasks', { silent: true }, function()
         {
             assert.ok(browser.success);
+            assert.equal('Macaque', browser.text('title'));
             done();
         });
-    });
-
-    it('should load page with title "Macaque"', function()
-    {
-        assert.equal('Macaque', browser.text('title'));
     });
 });
