@@ -266,6 +266,12 @@ Macaque.SettingsController = Ember.Controller.extend({
    Macaque Tasks (all)
    ========================================================================== */
 
+Macaque.TasksView = Ember.View.extend({
+
+    classNames: ['tasks-view']
+
+});
+
 Macaque.TasksRoute = Ember.Route.extend({
 
     model: function(params)
