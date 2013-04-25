@@ -112,6 +112,7 @@ td.text-right {
 .view__title code {
     font-size: 80%;
     line-height: 1;
+    border-color: #e1e1e8;
 }
 
 .view__title--light {

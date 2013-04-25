@@ -126,7 +126,9 @@ Macaque.List = DS.Model.extend({
     }.property('tasks'),
 
     openTaskCount: function() {
-        return this.get('tasks').filterProperty('isComplete', false).get('length');
+        return this.get('tasks').filter(function(item) {
+            return !item.get('isComplete') && !item.get('isHidden');
+        }).get('length');
     }.property('tasks.@each.isComplete'),
 
     loadedTaskCount: function() {
@@ -497,8 +499,18 @@ Macaque.ListController = Ember.ObjectController.extend({
 
     removeList: function(list)
     {
+        var task_ids = [];
+        list.get('tasks').forEach(function(task) {
+            task_ids.push(task.id);
+        });
         list.set('isHidden', true);
         list.deleteRecord();
+        list.one('didDelete', function() {
+            task_ids.forEach(function(id) {
+                var task = Macaque.Task.find(id);
+                task.reload();
+            });
+        });
         list.get('transaction').commit();
     }
 });
@@ -574,20 +586,31 @@ Macaque.TaskRoute = Ember.Route.extend({
         {
             var route = this,
                 task = this.currentModel,
-                lists = task.get('lists');
+                list_ids = [];
+
+            task.get('lists').forEach(function(list) {
+                list_ids.push(list.get('id'));
+            });
 
             task.one('didDelete', function()
             {
-                if (!lists.get('length')) {
+                if (!list_ids.length) {
                     route.transitionTo('index');
+                    return;
                 }
-                // transition to first list after reload
-                lists.forEach(function(list, i) {
+                list_ids.forEach(function(id, i)
+                {
+                    var list = Macaque.List.find(id);
                     list.reload();
-                    if (i) return;
-                    list.one('didReload', function() {
-                        route.transitionTo('list', list);
-                    });
+                    if (i === 0) {
+                        list.one('didReload', function() {
+                            if (list.get('tasks').get('length')) {
+                                route.transitionTo('list', list);
+                            } else {
+                                route.transitionTo('index');
+                            }
+                        });
+                    }
                 });
             });
 
