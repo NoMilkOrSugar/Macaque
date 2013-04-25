@@ -127,7 +127,11 @@ Macaque.List = DS.Model.extend({
 
     openTaskCount: function() {
         return this.get('tasks').filterProperty('isComplete', false).get('length');
-    }.property('tasks.@each.isComplete')
+    }.property('tasks.@each.isComplete'),
+
+    loadedTaskCount: function() {
+        return this.get('tasks').filterProperty('isLoaded', true).get('length');
+    }.property('tasks.@each.isLoaded')
 });
 
 Macaque.Task = DS.Model.extend({
@@ -323,6 +327,10 @@ Macaque.IndexRoute = Ember.Route.extend({
 });
 
 Macaque.IndexController = Ember.Controller.extend({
+
+    loadedListCount: function() {
+        return this.get('content').filterProperty('isLoaded', true).get('length');
+    }.property('content.@each.isLoaded'),
 
     orderedLists: function() {
         return Ember.ArrayProxy.createWithMixins(Ember.SortableMixin, {

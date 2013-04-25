@@ -46,26 +46,32 @@
     <ul class="breadcrumb">
         <li class="active">All Lists</li>
     </ul>
-    <table class="table table-bordered table-striped">
-        <thead>
+    {{#if loadedListCount}}
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="text-right">Tasks</th>
+                    <th class="text-right">Modified</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{#each list in orderedLists}}
+            {{#unless list.isHidden}}
             <tr>
-                <th>Name</th>
-                <th class="text-right">Tasks</th>
-                <th class="text-right">Modified</th>
+                <td>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</td>
+                <td class="text-right"><span class="badge">{{list.openTaskCount}}</span></td>
+                <td class="muted text-right">{{formattedDate list.modified}}</td>
             </tr>
-        </thead>
-        <tbody>
-        {{#each list in orderedLists}}
-        {{#unless list.isHidden}}
-        <tr>
-            <td>{{#linkTo 'list' list}}{{list.name}}{{/linkTo}}</td>
-            <td class="text-right"><span class="badge">{{list.openTaskCount}}</span></td>
-            <td class="muted text-right">{{formattedDate list.modified}}</td>
-        </tr>
-        {{/unless}}
-        {{/each}}
-        </tbody>
-    </table>
+            {{/unless}}
+            {{/each}}
+            </tbody>
+        </table>
+    {{else}}
+        <div class="well">
+            <p class="muted text-center">Loading…</p>
+        </div>
+    {{/if}}
 
     {{view Macaque.ListCreateView}}
 </script>
@@ -138,27 +144,33 @@
 
     {{view Macaque.TaskCreateView}}
 
-    <table class="table table-bordered table-striped tasks">
-        <thead>
-            <tr>
-                <th>Task</th>
-            </tr>
-        </thead>
-        <tbody>
-        {{#each task in orderedTasks}}
-            {{#unless task.isHidden}}
-            <tr class="tasks__row">
-                <td {{bindAttr class="task.isComplete"}}>
-                    {{view Ember.Checkbox checkedBinding="task.isComplete" class="tasks__checkbox"}}
-                    {{#linkTo 'task' task class="tasks__link"}}{{basicMarkdown task.text}}{{/linkTo}}
-                </td>
-            </tr>
-            {{/unless}}
-        {{/each}}
-        </tbody>
-    </table>
+    {{#if loadedTaskCount}}
+        <table class="table table-bordered table-striped tasks">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{#each task in orderedTasks}}
+                {{#unless task.isHidden}}
+                <tr class="tasks__row">
+                    <td {{bindAttr class="task.isComplete"}}>
+                        {{view Ember.Checkbox checkedBinding="task.isComplete" class="tasks__checkbox"}}
+                        {{#linkTo 'task' task class="tasks__link"}}{{basicMarkdown task.text}}{{/linkTo}}
+                    </td>
+                </tr>
+                {{/unless}}
+            {{/each}}
+            </tbody>
+        </table>
+    {{else}}
+        <div class="well">
+            <p class="muted text-center">Loading…</p>
+        </div>
+    {{/if}}
 
-    <p>Modified: {{fromNow modified}}</p>
+    <p class="muted">Modified: {{fromNow modified}}</p>
 
 </script>
 
@@ -265,7 +277,7 @@
     </ul>
     {{/if}}
 
-    <p>Modified: {{fromNow modified}}</p>
+    <p class="muted">Modified: {{fromNow modified}}</p>
 
 </script>
 
