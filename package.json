@@ -14,7 +14,8 @@
         "express"                : ">=3.x.x",
         "ejs"                    : ">=0.8.x",
         "mongoose"               : ">=3.6.x",
-        "mocha"                  : ">=1.9.x"
+        "mocha"                  : ">=1.9.x",
+        "zombie"                 : ">=2.0.x"
     },
 
     "engine": "node >= 0.8.x"

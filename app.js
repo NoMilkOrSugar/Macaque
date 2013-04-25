@@ -151,5 +151,5 @@ http.createServer(app).listen(app.get('port'), function()
     console.log(app.get('title') + ' listening on port ' + app.get('port'));
 
     // run Mocha tests for Macaque API
-    // require('child_process').spawn('./node_modules/.bin/mocha', ['--reporter', 'Spec', './tests/macaque-api.js'], { stdio: 'inherit' });
+    // require('child_process').spawn('./node_modules/.bin/mocha', ['--reporter', 'Spec', './tests/mocha/macaque-api.js'], { stdio: 'inherit' });
 });
