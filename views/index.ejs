@@ -42,7 +42,7 @@
 </script>
 
 <script type="text/x-handlebars" data-template-name="index">
-    <h2 class="view-title">All Lists</h2>
+    <h2 class="view__title">All Lists</h2>
     <ul class="breadcrumb">
         <li class="active">All Lists</li>
     </ul>
@@ -72,15 +72,15 @@
 
 <script type="text/x-handlebars" data-template-name="list-create">
 <div class="well well-small">
-    <div class="input-append">
-        {{view Ember.TextField valueBinding="controller.newList.name" placeholder="New List…" id="list-create-text"}}
-        <button class="btn" id="list-create-button"><i class="icon-pencil"></i> Add List</button>
+    <div class="input-append create-view__form">
+        {{view Ember.TextField valueBinding="controller.newList.name" placeholder="New List…" class="create-view__text"}}
+        <button class="btn create-view__button"><i class="icon-pencil"></i> Add List</button>
     </div>
 </div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="settings">
-<h2 class="view-title">Settings</h2>
+<h2 class="view__title">Settings</h2>
 <hr>
 <h3>Backups</h3>
 {{#if hasSuccess }}
@@ -113,8 +113,8 @@
 
 <script type="text/x-handlebars" data-template-name="list">
 
-    <div class="btn-group pull-right list-view-actions">
-        <button {{action 'edit'}} class="btn" id="list-view-edit-button"><i class="icon-edit"></i> Edit List</button>
+    <div class="btn-group pull-right view-actions">
+        <button {{action 'startEdit'}} class="btn view-actions__edit"><i class="icon-edit"></i> Edit List</button>
         <button class="btn dropdown-toggle" data-toggle="dropdown">
         <span class="caret"></span>
         </button>
@@ -128,7 +128,7 @@
     {{#if isEditing }}
         {{partial 'list/edit'}}
     {{else}}
-        <h2 class="view-title">{{name}} <span class="badge">{{openTaskCount}}</span></h2>
+        <h2 class="view__title">{{name}} <span class="badge">{{openTaskCount}}</span></h2>
     {{/if }}
 
     <ul class="breadcrumb">
@@ -138,7 +138,7 @@
 
     {{view Macaque.TaskCreateView}}
 
-    <table class="table table-bordered table-striped list-view-tasks">
+    <table class="table table-bordered table-striped tasks">
         <thead>
             <tr>
                 <th>Task</th>
@@ -147,10 +147,10 @@
         <tbody>
         {{#each task in orderedTasks}}
             {{#unless task.isHidden}}
-            <tr>
+            <tr class="tasks__row">
                 <td {{bindAttr class="task.isComplete"}}>
-                    {{view Ember.Checkbox checkedBinding="task.isComplete"}}
-                    {{#linkTo 'task' task}}{{basicMarkdown task.text}}{{/linkTo}}
+                    {{view Ember.Checkbox checkedBinding="task.isComplete" class="tasks__checkbox"}}
+                    {{#linkTo 'task' task class="tasks__link"}}{{basicMarkdown task.text}}{{/linkTo}}
                 </td>
             </tr>
             {{/unless}}
@@ -163,41 +163,39 @@
 </script>
 
 <script type="text/x-handlebars" data-template-name="list/_edit">
-<div class="input-append list-edit-view">
-    {{view Ember.TextField valueBinding="name" id="list-view-edit-field"}}
+<div class="input-append view-edit">
+    {{view Ember.TextField valueBinding="name" class="view-edit__field"}}
     <button class="btn" {{action 'endEdit'}}><i class="icon-ok"></i></button>
 </div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="task-create">
 <div class="well well-small">
-    <div class="input-append">
-        {{view Ember.TextField valueBinding="controller.newTask.text" placeholder="New Task…" id="task-create-text"}}
-        <button class="btn" id="task-create-button"><i class="icon-pencil"></i> Add Task</button>
+    <div class="input-append create-view__form">
+        {{view Ember.TextField valueBinding="controller.newTask.text" placeholder="New Task…" class="create-view__text"}}
+        <button class="btn create-view__button"><i class="icon-pencil"></i> Add Task</button>
     </div>
 </div>
 </script>
 
 <script type="text/x-handlebars" data-template-name="tasks">
 
-<h2 class="view-title">All Tasks <span class="badge">{{openTaskCount}}</span></h2>
+<h2 class="view__title">All Tasks <span class="badge">{{openTaskCount}}</span></h2>
 
-<table class="table table-bordered table-striped list-view-tasks">
+<table class="table table-bordered table-striped tasks">
     <thead>
         <tr>
             <th>Task</th>
-            <th class="text-right">Modified</th>
         </tr>
     </thead>
     <tbody>
     {{#each task in orderedTasks}}
         {{#unless task.isHidden}}
-        <tr>
+        <tr class="tasks__row">
             <td {{bindAttr class="task.isComplete"}}>
-            {{view Ember.Checkbox checkedBinding="task.isComplete"}}
-            {{#linkTo 'task' task}}{{basicMarkdown task.text}}{{/linkTo}}
+            {{view Ember.Checkbox checkedBinding="task.isComplete" class="tasks__checkbox"}}
+            {{#linkTo 'task' task class="tasks__link"}}{{basicMarkdown task.text}}{{/linkTo}}
             </td>
-            <td class="muted text-right">{{formattedDate task.modified}}</td>
         </tr>
         {{/unless}}
     {{/each}}
@@ -208,8 +206,8 @@
 
 <script type="text/x-handlebars" data-template-name="task">
 
-    <div class="btn-group pull-right task-view-actions">
-        <button {{action 'edit'}} class="btn" id="task-view-edit-button"><i class="icon-edit"></i> Edit Task</button>
+    <div class="btn-group pull-right view-actions">
+        <button {{action 'startEdit'}} class="btn view-actions__edit"><i class="icon-edit"></i> Edit Task</button>
         <button class="btn dropdown-toggle" data-toggle="dropdown">
         <span class="caret"></span>
         </button>
@@ -223,7 +221,7 @@
     {{#if isEditing }}
         {{partial 'task/edit'}}
     {{else}}
-        <h2 class="view-title">{{view Ember.Checkbox checkedBinding="isComplete"}} {{basicMarkdown text}}</h2>
+        <h2 class="view__title view__title--light">{{view Ember.Checkbox checkedBinding="isComplete"}} {{basicMarkdown text}}</h2>
     {{/if }}
 
     <ul class="breadcrumb">
@@ -238,9 +236,9 @@
     <div class="well well-small task-parents">
         <ul class="nav nav-pills">
             {{#each list in lists}}
-            <li>
+            <li class="task-parents__item">
                 {{#linkTo 'list' list}}{{list.name}}{{/linkTo}}
-                <button class="close" {{action 'removeFromList' list}}>&times;</button>
+                <button class="close task-parents__close" {{action 'removeFromList' list}}>&times;</button>
             </li>
             {{/each}}
         </ul>
@@ -272,8 +270,8 @@
 </script>
 
 <script type="text/x-handlebars" data-template-name="task/_edit">
-<div class="input-append task-edit-view">
-    {{view Ember.TextField valueBinding="text" id="task-view-edit-field"}}
+<div class="input-append view-edit">
+    {{view Ember.TextField valueBinding="text" class="view-edit__field"}}
     <button class="btn" {{action 'endEdit'}}><i class="icon-ok"></i></button>
 </div>
 </script>
