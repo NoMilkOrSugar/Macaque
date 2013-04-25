@@ -15,7 +15,11 @@ body {
     }
 }
 
-h2 .badge {
+.navbar .nav a.active {
+    color: #fff !important;
+}
+
+.view-title .badge {
     font-size: 14px;
     padding: 4px 8px;
     vertical-align: 4px;
